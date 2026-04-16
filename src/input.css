@@ -1,6 +1,33 @@
+@import "tailwindcss";
 
+@theme {
+  --color-liyog-green: #28A428;
+  --color-liyog-green-light: #34BF49;
+  --color-liyog-green-dark: #228B22;
+  --color-liyog-deep-green: #006400;
+  --color-liyog-gold: #FFD700;
+  --color-liyog-orange: #FF7A00;
+ 
 
-@tailwind base;
+ --color-liyog-blue: #1877F2;
+  --color-liyog-black: #111111;
+  --color-liyog-black-light: #1A1A1A;
+  --color-liyog-black-dark: #000000;
+  --color-liyog-yellow: #FFEA00;
+  --color-liyog-yellow-dark: #E6D500;
+  --color-liyog-red: #FF3B30;
+  --color-liyog-red-dark: #C1271A;
 
-@tailwind components;
-@tailwind utilities;
+  --font-sans: Inter, sans-serif;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-150%) skewX(-15deg); }
+  50% { transform: translateX(150%) skewX(-15deg); }
+  100% { transform: translateX(150%) skewX(-15deg); }
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
