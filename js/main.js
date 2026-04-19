@@ -1,8 +1,2 @@
-const supabase = window.supabase.createClient(
-  CONFIG.supabaseUrl,
-  CONFIG.supabaseAnonKey
-);
-
-document.getElementById("status").textContent = "Supabase connected successfully ✅";
-
-console.log("Supabase connected:", supabase);
+console.log("MAIN JS IS RUNNING");
+document.getElementById("status").innerText = "JS is working ✅";
