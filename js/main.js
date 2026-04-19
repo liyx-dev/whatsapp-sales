@@ -3,4 +3,6 @@ const supabase = window.supabase.createClient(
   CONFIG.supabaseAnonKey
 );
 
+document.getElementById("status").textContent = "Supabase connected successfully ✅";
+
 console.log("Supabase connected:", supabase);
