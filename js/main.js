@@ -1,10 +1,21 @@
 console.log("MAIN JS RUNNING");
 
-// update UI
-document.getElementById("status").innerText = "JS is running ✅";
+// UI update
+document.getElementById("status").innerText = "Testing Supabase connection...";
 
-// check Supabase
-console.log("Supabase:", window.supabase);
-
-// check config
+// Check CONFIG
 console.log("CONFIG:", CONFIG);
+
+// Check Supabase library
+console.log("Supabase library:", window.supabase);
+
+// Create Supabase client
+const supabase = window.supabase.createClient(
+  CONFIG.supabaseUrl,
+  CONFIG.supabaseAnonKey
+);
+
+console.log("Supabase client created:", supabase);
+
+// Final UI update
+document.getElementById("status").innerText = "Supabase client created ✅";
