@@ -1,1 +1,6 @@
-console.log("App loaded successfully");
+const supabase = window.supabase.createClient(
+  CONFIG.supabaseUrl,
+  CONFIG.supabaseAnonKey
+);
+
+console.log("Supabase connected:", supabase);
