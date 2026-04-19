@@ -3,114 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Liyog Premium Store</title>
-
-  <!-- YOUR BUILT TAILWIND FILE -->
-  <link rel="stylesheet" href="./output.css">
+  <title>Supabase Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
 
-<body class="bg-liyog-black-dark text-white font-sans">
+  <div class="bg-white shadow-lg rounded-2xl p-8 text-center">
+    <h1 class="text-2xl font-bold text-green-600 mb-4">
+      Supabase Connection Test
+    </h1>
 
-  <!-- Header -->
-  <header class="bg-liyog-black text-white shadow-xl">
-    <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-wide text-liyog-gold">LIYOG</h1>
-      <button class="bg-liyog-green hover:bg-liyog-green-dark px-5 py-2 rounded-full font-semibold transition">
-        Contact Seller
-      </button>
-    </div>
-  </header>
+    <p id="status" class="text-gray-700">
+      Checking connection...
+    </p>
+  </div>
 
-  <!-- Hero -->
-  <section class="max-w-7xl mx-auto px-6 py-10">
-    <div class="bg-liyog-black-light rounded-3xl p-10 text-white shadow-2xl">
-      <p class="text-liyog-yellow uppercase tracking-[3px] text-sm font-semibold">Premium Collection</p>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-      <h2 class="text-4xl md:text-5xl font-bold mt-3 leading-tight">
-        Luxury Store <span class="text-liyog-gold">Experience</span>
-      </h2>
+  <!-- Your Config -->
+  <script src="js/config.js"></script>
 
-      <p class="mt-4 text-gray-300 max-w-2xl">
-        Elegant product display system built with your Liyog design system on Tailwind v4.
-      </p>
-    </div>
-  </section>
-
-  <!-- Status badges -->
-  <section class="max-w-7xl mx-auto px-6 mb-8 flex gap-3 flex-wrap">
-    <span class="bg-liyog-green text-white px-4 py-2 rounded-full">Available</span>
-    <span class="bg-liyog-yellow text-liyog-black px-4 py-2 rounded-full">Featured</span>
-    <span class="bg-liyog-orange text-white px-4 py-2 rounded-full">Hot Deal</span>
-    <span class="bg-liyog-blue text-white px-4 py-2 rounded-full">New Arrival</span>
-    <span class="bg-liyog-red text-white px-4 py-2 rounded-full">Low Stock</span>
-  </section>
-
-  <!-- Product cards -->
-  <main class="max-w-7xl mx-auto px-6 pb-16 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-
-    <!-- Product 1 -->
-    <div class="bg-liyog-black-light rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition">
-      <img src="https://picsum.photos/700/500?1" class="w-full h-64 object-cover">
-
-      <div class="p-6">
-        <span class="bg-liyog-green-light text-white px-3 py-1 rounded-full text-sm">Top Seller</span>
-
-        <h3 class="text-2xl font-bold mt-4">Premium Wrist Watch</h3>
-        <p class="text-gray-300 mt-3">Luxury stainless design with elegant finishing.</p>
-
-        <div class="flex justify-between items-center mt-6">
-          <span class="text-2xl font-bold text-liyog-green">₦95,000</span>
-          <button class="bg-liyog-black text-liyog-gold px-5 py-2 rounded-full hover:bg-liyog-black-light">
-            Buy
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Product 2 -->
-    <div class="bg-liyog-black-light rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition">
-      <img src="https://picsum.photos/700/500?2" class="w-full h-64 object-cover">
-
-      <div class="p-6">
-        <span class="bg-liyog-yellow text-liyog-black px-3 py-1 rounded-full text-sm">Premium</span>
-
-        <h3 class="text-2xl font-bold mt-4">Wireless Headphones</h3>
-        <p class="text-gray-300 mt-3">Clear sound with deep bass and stylish comfort.</p>
-
-        <div class="flex justify-between items-center mt-6">
-          <span class="text-2xl font-bold text-liyog-orange">₦55,000</span>
-          <button class="bg-liyog-orange text-white px-5 py-2 rounded-full hover:bg-liyog-red-dark">
-            Buy
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Product 3 -->
-    <div class="bg-liyog-black-light rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition">
-      <img src="https://picsum.photos/700/500?3" class="w-full h-64 object-cover">
-
-      <div class="p-6">
-        <span class="bg-liyog-red text-white px-3 py-1 rounded-full text-sm">Limited</span>
-
-        <h3 class="text-2xl font-bold mt-4">Luxury Backpack</h3>
-        <p class="text-gray-300 mt-3">Modern premium leather design for professionals.</p>
-
-        <div class="flex justify-between items-center mt-6">
-          <span class="text-2xl font-bold text-liyog-blue">₦38,000</span>
-          <button class="bg-liyog-blue text-white px-5 py-2 rounded-full">
-            Buy
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-liyog-black text-gray-400 text-center py-6">
-    Powered by Liyog Premium Design System
-  </footer>
+  <!-- Main Script -->
+  <script src="js/main.js"></script>
 
 </body>
 </html>
