@@ -1,12 +1,16 @@
-console.log("MAIN JS RUNNING");
+  console.log("MAIN JS RUNNING");
 
 window.addEventListener("DOMContentLoaded", async () => {
 
   const status = document.getElementById("status");
   const dbStatus = document.getElementById("dbStatus");
+  const storageStatus = document.getElementById("storageStatus");
 
   if (!status) return;
 
+  // ==========================
+  // SUPABASE INIT
+  // ==========================
   status.innerText = "Initializing Supabase...";
 
   const supabase = window.supabase.createClient(
@@ -17,7 +21,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   status.innerText = "Supabase initialized ✅";
 
   // ==========================
-  // TEST DATABASE (UI VERSION)
+  // TEST SUPABASE DATABASE
   // ==========================
   async function testSupabase() {
 
@@ -43,4 +47,29 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   testSupabase();
 
+  // ==========================
+  // TEST CLOUDLFARE R2 STORAGE
+  // ==========================
+  function testR2() {
+    const testUrl = CONFIG.cloudflareR2BaseUrl + "/test-image.jpg";
+
+    fetch(testUrl)
+      .then(res => {
+        if (res.ok) {
+          storageStatus.innerText = "✅ Storage (R2) is reachable";
+          storageStatus.className = "mt-2 text-green-600 font-medium";
+        } else {
+          storageStatus.innerText = "⚠️ Storage URL not accessible";
+          storageStatus.className = "mt-2 text-yellow-600 font-medium";
+        }
+      })
+      .catch(() => {
+        storageStatus.innerText = "❌ Storage connection failed";
+        storageStatus.className = "mt-2 text-red-500 font-medium";
+      });
+  }
+
+  testR2();
+
 });
+
