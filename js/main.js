@@ -1,7 +1,10 @@
 console.log("MAIN JS RUNNING");
 
-// Check if Supabase library is loaded
-console.log("Supabase object:", window.supabase);
+// update UI
+document.getElementById("status").innerText = "JS is running ✅";
 
-// Check if CONFIG is loaded
+// check Supabase
+console.log("Supabase:", window.supabase);
+
+// check config
 console.log("CONFIG:", CONFIG);
