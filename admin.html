@@ -1,162 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Liyog Admin</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liyog Admin Upload</title>
 
-  
- <!-- YOUR BUILT TAILWIND FILE -->
-  <link rel="stylesheet" href="./output.css">
-</head>
+  <link rel="stylesheet" href="https://liyx-dev.github.io/whatsapp-sales/output.css">
 
-<body class="min-h-screen bg-slate-50">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <div class="flex min-h-screen">
-
-    <!-- SIDEBAR -->
-    <aside class="w-72 bg-liyog-black text-white p-6">
-      <h1 class="text-2xl font-bold mb-8">Liyog Admin</h1>
-
-      <div class="space-y-3">
-        <button onclick="showTab('dashboard')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
-          Dashboard
-        </button>
-
-        <button onclick="showTab('products')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
-          Products
-        </button>
-
-        <button onclick="showTab('stories')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
-          Stories
-        </button>
-
-        <button onclick="showTab('profile')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
-          Profile
-        </button>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="flex-1 p-6">
-
-      <!-- HEADER -->
-      <div class="flex justify-between items-center mb-8">
-        <h2 id="pageTitle" class="text-2xl font-bold text-liyog-black">
-          Dashboard
-        </h2>
-
-        <button class="btn-primary">
-          Save Changes
-        </button>
-      </div>
-
-      <!-- DASHBOARD -->
-      <section id="dashboardTab" class="tab-content">
-        <div class="grid md:grid-cols-3 gap-6">
-
-          <div class="card-premium p-6">
-            <p class="text-gray-400 text-sm">Products</p>
-            <h3 class="text-4xl font-bold mt-3">0</h3>
-          </div>
-
-          <div class="card-premium p-6">
-            <p class="text-gray-400 text-sm">Stories</p>
-            <h3 class="text-4xl font-bold mt-3">0</h3>
-          </div>
-
-          <div class="card-premium p-6">
-            <p class="text-gray-400 text-sm">Views</p>
-            <h3 class="text-4xl font-bold mt-3">0</h3>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- PRODUCTS -->
-      <section id="productsTab" class="tab-content hidden">
-        <div class="card-premium p-6 space-y-6">
-
-          <h3 class="text-2xl font-semibold">Add Product</h3>
-
-          <input type="text" class="input-premium" placeholder="Product Name">
-          <input type="text" class="input-premium" placeholder="Price">
-          <select class="input-premium">
-            <option>Select Category</option>
-          </select>
-
-          <input type="text" class="input-premium" placeholder="Tags (comma separated)">
-          <input type="text" class="input-premium" placeholder="Image URL">
-          <input type="text" class="input-premium" placeholder="Video URL (optional)">
-
-          <textarea class="input-premium h-32" placeholder="Product Description"></textarea>
-
-          <button class="btn-primary">
-            Upload Product
-          </button>
-
-        </div>
-      </section>
-
-      <!-- STORIES -->
-      <section id="storiesTab" class="tab-content hidden">
-        <div class="card-premium p-6 space-y-6">
-
-          <h3 class="text-2xl font-semibold">Upload Story</h3>
-
-          <input type="text" class="input-premium" placeholder="Story Media URL">
-
-          <select class="input-premium">
-            <option>Image</option>
-            <option>Video</option>
-          </select>
-
-          <select class="input-premium">
-            <option>Link to Product</option>
-            <option>Link to WhatsApp</option>
-          </select>
-
-          <button class="btn-primary">
-            Upload Story
-          </button>
-
-        </div>
-      </section>
-
-      <!-- PROFILE -->
-      <section id="profileTab" class="tab-content hidden">
-        <div class="card-premium p-6 space-y-6">
-
-          <h3 class="text-2xl font-semibold">Business Profile</h3>
-
-          <input type="text" class="input-premium" placeholder="Business Name">
-          <input type="text" class="input-premium" placeholder="Logo URL">
-          <input type="text" class="input-premium" placeholder="WhatsApp Number">
-
-          <textarea class="input-premium h-32" placeholder="Business Bio"></textarea>
-
-          <button class="btn-primary">
-            Save Profile
-          </button>
-
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <script>
-    function showTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => {
-        el.classList.add('hidden');
-      });
-
-      document.getElementById(tab + 'Tab').classList.remove('hidden');
-
-      document.getElementById('pageTitle').innerText =
-        tab.charAt(0).toUpperCase() + tab.slice(1);
+  <style>
+    .hidden-file {
+      display: none;
     }
-  </script>
+
+    .preview-grid img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 16px;
+    }
+
+    .drop-zone.dragover {
+      border-color: var(--color-liyog-green);
+      background: rgba(40,164,40,.05);
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      color: white;
+      z-index: 9999;
+      box-shadow: 0 12px 30px rgba(0,0,0,.15);
+    }
+
+    .toast.success {
+      background: #28A428;
+    }
+
+    .toast.error {
+      background: #FF3B30;
+    }
+  </style>
+</head>
+<body>
+
+<div class="min-h-screen p-4 md:p-8">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- HEADER -->
+    <div class="glass rounded-3xl px-6 py-5 mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-liyog-black">Product Upload</h1>
+        <p class="text-sm text-slate-500">Create premium product listings</p>
+      </div>
+      <div class="bg-liyog-green text-white px-4 py-2 rounded-full text-sm font-semibold">
+        Admin
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+
+      <!-- FORM -->
+      <div class="card-premium p-6 animate-fade-up">
+        <h2 class="text-xl font-semibold mb-5">Product Details</h2>
+
+        <div class="space-y-4">
+          <input id="name" class="input-premium" placeholder="Product name">
+          <input id="price" class="input-premium" placeholder="Price">
+          <select id="category" class="input-premium"></select>
+          <input id="tags" class="input-premium" placeholder="Tags (comma separated)">
+          <input id="whatsapp" class="input-premium" placeholder="WhatsApp number">
+          <input id="youtube" class="input-premium" placeholder="Optional YouTube URL">
+          <textarea id="description" class="input-premium min-h-[120px]" placeholder="Product description"></textarea>
+        </div>
+
+        <!-- IMAGE UPLOAD -->
+        <div class="mt-6">
+          <label class="font-semibold text-sm mb-2 block">Upload Images (max 10)</label>
+          <div id="dropZone" class="drop-zone border-2 border-dashed border-slate-300 rounded-3xl p-8 text-center cursor-pointer">
+            <p class="text-slate-500">Tap or drag images here</p>
+            <input id="images" type="file" multiple accept="image/*" class="hidden-file">
+          </div>
+          <div id="preview" class="preview-grid grid grid-cols-3 gap-3 mt-4"></div>
+        </div>
+
+        <!-- VIDEO -->
+        <div class="mt-6">
+          <label class="font-semibold text-sm mb-2 block">Optional Video</label>
+          <input id="video" type="file" accept="video/*" class="input-premium">
+        </div>
+
+        <button onclick="submitProduct()" class="btn-primary w-full mt-8">
+          Upload Product
+        </button>
+      </div>
+
+      <!-- LIVE PREVIEW -->
+      <div class="card-premium p-6 animate-fade-up">
+        <h2 class="text-xl font-semibold mb-5">Live Preview</h2>
+
+        <div id="liveCard" class="rounded-3xl overflow-hidden border border-slate-100">
+          <img id="liveImage" src="https://placehold.co/600x400" class="w-full h-64 object-cover">
+          <div class="p-5">
+            <h3 id="liveName" class="font-bold text-lg">Product Name</h3>
+            <p id="livePrice" class="text-liyog-green font-semibold mt-2">₦0</p>
+            <p id="liveDesc" class="text-sm text-slate-500 mt-3">Description preview...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let selectedImages = [];
+
+function toast(message, type="success") {
+  const div = document.createElement("div");
+  div.className = `toast ${type}`;
+  div.textContent = message;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+async function loadCategories() {
+  const select = document.getElementById("category");
+  select.innerHTML = `<option value="">Loading categories...</option>`;
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id,name")
+    .order("name");
+
+  if (error) {
+    select.innerHTML = `<option value="">Failed to load</option>`;
+    console.error(error);
+    return;
+  }
+
+  select.innerHTML = `<option value="">Select category</option>`;
+
+  data.forEach(cat => {
+    const option = document.createElement("option");
+    option.value = cat.id;
+    option.textContent = cat.name;
+    select.appendChild(option);
+  });
+}
+
+function updateLivePreview() {
+  document.getElementById("liveName").textContent =
+    document.getElementById("name").value || "Product Name";
+
+  document.getElementById("livePrice").textContent =
+    document.getElementById("price").value || "₦0";
+
+  document.getElementById("liveDesc").textContent =
+    document.getElementById("description").value || "Description preview...";
+}
+
+["name","price","description"].forEach(id => {
+  document.getElementById(id).addEventListener("input", updateLivePreview);
+});
+
+const dropZone = document.getElementById("dropZone");
+const imageInput = document.getElementById("images");
+
+dropZone.addEventListener("click", () => imageInput.click());
+
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  handleFiles(e.dataTransfer.files);
+});
+
+imageInput.addEventListener("change", e => {
+  handleFiles(e.target.files);
+});
+
+function handleFiles(files) {
+  selectedImages = [...files].slice(0, 10);
+
+  const preview = document.getElementById("preview");
+  preview.innerHTML = "";
+
+  selectedImages.forEach(file => {
+    const url = URL.createObjectURL(file);
+    const img = document.createElement("img");
+    img.src = url;
+    preview.appendChild(img);
+  });
+
+  if (selectedImages.length) {
+    document.getElementById("liveImage").src =
+      URL.createObjectURL(selectedImages[0]);
+  }
+}
+
+async function getUploadData(file) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${supabaseKey}`
+    },
+    body: JSON.stringify({
+      fileName: file.name,
+      fileType: file.type,
+      folder: "products"
+    })
+  });
+
+  return await res.json();
+}
+
+async function uploadFile(file) {
+  const meta = await getUploadData(file);
+
+  await fetch(meta.uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type
+    },
+    body: file
+  });
+
+  return meta.publicUrl;
+}
+
+async function submitProduct() {
+  try {
+    toast("Uploading product...");
+
+    const imageUrls = [];
+
+    for (const file of selectedImages) {
+      const url = await uploadFile(file);
+      imageUrls.push(url);
+    }
+
+    let videoUrl = null;
+    const videoFile = document.getElementById("video").files[0];
+
+    if (videoFile) {
+      videoUrl = await uploadFile(videoFile);
+    }
+
+    const { error } = await supabase.rpc("create_product", {
+      p_name: document.getElementById("name").value,
+      p_price: document.getElementById("price").value,
+      p_image_urls: imageUrls,
+      p_description: document.getElementById("description").value,
+      p_whatsapp_number: document.getElementById("whatsapp").value,
+      p_category_id: document.getElementById("category").value || null,
+      p_tags: document.getElementById("tags").value,
+      p_video_url: videoUrl,
+      p_youtube_url: document.getElementById("youtube").value || null,
+      p_sort_order: 0
+    });
+
+    if (error) throw error;
+
+    toast("Product uploaded successfully");
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Upload failed", "error");
+  }
+}
+
+loadCategories();
+updateLivePreview();
+</script>
 
 </body>
 </html>
