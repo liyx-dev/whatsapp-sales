@@ -1,11 +1,18 @@
 @import "tailwindcss";
 
-/* LIYOG DESIGN SYSTEM */
+/* SCAN ALL PROJECT FILES */
+@source "../*.html";
+@source "../js/**/*.js";
+
+/* =========================
+   LIYOG DESIGN SYSTEM
+========================= */
 @theme {
   --color-liyog-green: #28A428;
   --color-liyog-green-light: #34BF49;
   --color-liyog-green-dark: #228B22;
   --color-liyog-deep-green: #006400;
+
   --color-liyog-gold: #FFD700;
   --color-liyog-orange: #FF7A00;
   --color-liyog-blue: #1877F2;
@@ -23,17 +30,35 @@
   --font-sans: "Inter", sans-serif;
 }
 
-/* BODY DEFAULT */
+/* =========================
+   BASE
+========================= */
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     font-family: var(--font-sans);
     background-color: #f8fafc;
     color: #1e293b;
   }
+
+  button {
+    cursor: pointer;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
 }
 
-/* CUSTOM ANIMATIONS */
+/* =========================
+   PREMIUM UTILITIES
+========================= */
 @layer utilities {
+
   @keyframes shimmer {
     0% { transform: translateX(-150%) skewX(-15deg); }
     50% { transform: translateX(150%) skewX(-15deg); }
@@ -43,6 +68,17 @@
   @keyframes float {
     0%,100% { transform: translateY(0); }
     50% { transform: translateY(-2px); }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-shimmer {
@@ -55,5 +91,49 @@
 
   .animate-pulse-slow {
     animation: pulse 4s cubic-bezier(0.4,0,0.6,1) infinite;
+  }
+
+  .animate-fade-up {
+    animation: fade-up .4s ease-out;
+  }
+
+  .glass {
+    background: rgba(255,255,255,.8);
+    backdrop-filter: blur(14px);
+  }
+
+  .card-premium {
+    border-radius: 1.5rem;
+    background: white;
+    box-shadow:
+      0 10px 25px rgba(0,0,0,.06),
+      0 4px 10px rgba(0,0,0,.03);
+  }
+
+  .btn-primary {
+    background: var(--color-liyog-green);
+    color: white;
+    border-radius: 1rem;
+    padding: 0.85rem 1.4rem;
+    font-weight: 600;
+    transition: .25s;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-liyog-green-dark);
+  }
+
+  .input-premium {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: .9rem 1rem;
+    background: white;
+  }
+
+  .input-premium:focus {
+    outline: none;
+    border-color: var(--color-liyog-green);
+    box-shadow: 0 0 0 3px rgba(40,164,40,.15);
   }
 }
