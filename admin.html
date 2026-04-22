@@ -1,12 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel</title>
-</head>
-<body>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liyog Admin</title>
 
-  <h1>Admin Dashboard</h1>
+  
+ <!-- YOUR BUILT TAILWIND FILE -->
+  <link rel="stylesheet" href="./output.css">
+</head>
+
+<body class="min-h-screen bg-slate-50">
+
+  <div class="flex min-h-screen">
+
+    <!-- SIDEBAR -->
+    <aside class="w-72 bg-liyog-black text-white p-6">
+      <h1 class="text-2xl font-bold mb-8">Liyog Admin</h1>
+
+      <div class="space-y-3">
+        <button onclick="showTab('dashboard')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
+          Dashboard
+        </button>
+
+        <button onclick="showTab('products')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
+          Products
+        </button>
+
+        <button onclick="showTab('stories')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
+          Stories
+        </button>
+
+        <button onclick="showTab('profile')" class="w-full text-left px-4 py-3 rounded-2xl hover:bg-liyog-black-light transition">
+          Profile
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 p-6">
+
+      <!-- HEADER -->
+      <div class="flex justify-between items-center mb-8">
+        <h2 id="pageTitle" class="text-2xl font-bold text-liyog-black">
+          Dashboard
+        </h2>
+
+        <button class="btn-primary">
+          Save Changes
+        </button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <section id="dashboardTab" class="tab-content">
+        <div class="grid md:grid-cols-3 gap-6">
+
+          <div class="card-premium p-6">
+            <p class="text-gray-400 text-sm">Products</p>
+            <h3 class="text-4xl font-bold mt-3">0</h3>
+          </div>
+
+          <div class="card-premium p-6">
+            <p class="text-gray-400 text-sm">Stories</p>
+            <h3 class="text-4xl font-bold mt-3">0</h3>
+          </div>
+
+          <div class="card-premium p-6">
+            <p class="text-gray-400 text-sm">Views</p>
+            <h3 class="text-4xl font-bold mt-3">0</h3>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- PRODUCTS -->
+      <section id="productsTab" class="tab-content hidden">
+        <div class="card-premium p-6 space-y-6">
+
+          <h3 class="text-2xl font-semibold">Add Product</h3>
+
+          <input type="text" class="input-premium" placeholder="Product Name">
+          <input type="text" class="input-premium" placeholder="Price">
+          <select class="input-premium">
+            <option>Select Category</option>
+          </select>
+
+          <input type="text" class="input-premium" placeholder="Tags (comma separated)">
+          <input type="text" class="input-premium" placeholder="Image URL">
+          <input type="text" class="input-premium" placeholder="Video URL (optional)">
+
+          <textarea class="input-premium h-32" placeholder="Product Description"></textarea>
+
+          <button class="btn-primary">
+            Upload Product
+          </button>
+
+        </div>
+      </section>
+
+      <!-- STORIES -->
+      <section id="storiesTab" class="tab-content hidden">
+        <div class="card-premium p-6 space-y-6">
+
+          <h3 class="text-2xl font-semibold">Upload Story</h3>
+
+          <input type="text" class="input-premium" placeholder="Story Media URL">
+
+          <select class="input-premium">
+            <option>Image</option>
+            <option>Video</option>
+          </select>
+
+          <select class="input-premium">
+            <option>Link to Product</option>
+            <option>Link to WhatsApp</option>
+          </select>
+
+          <button class="btn-primary">
+            Upload Story
+          </button>
+
+        </div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="profileTab" class="tab-content hidden">
+        <div class="card-premium p-6 space-y-6">
+
+          <h3 class="text-2xl font-semibold">Business Profile</h3>
+
+          <input type="text" class="input-premium" placeholder="Business Name">
+          <input type="text" class="input-premium" placeholder="Logo URL">
+          <input type="text" class="input-premium" placeholder="WhatsApp Number">
+
+          <textarea class="input-premium h-32" placeholder="Business Bio"></textarea>
+
+          <button class="btn-primary">
+            Save Profile
+          </button>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.add('hidden');
+      });
+
+      document.getElementById(tab + 'Tab').classList.remove('hidden');
+
+      document.getElementById('pageTitle').innerText =
+        tab.charAt(0).toUpperCase() + tab.slice(1);
+    }
+  </script>
 
 </body>
 </html>
-
