@@ -118,177 +118,232 @@
 </div>
 
 <script>
-const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+document.addEventListener("DOMContentLoaded", async () => {
+  const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
 
-let selectedImages = [];
-
-function toast(message, type="success") {
-  const div = document.createElement("div");
-  div.className = `toast ${type}`;
-  div.textContent = message;
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 3000);
-}
-
-async function loadCategories() {
-  const select = document.getElementById("category");
-  select.innerHTML = `<option value="">Loading categories...</option>`;
-
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id,name")
-    .order("name");
-
-  if (error) {
-    select.innerHTML = `<option value="">Failed to load</option>`;
-    console.error(error);
+  if (!window.supabase) {
+    alert("Supabase library failed to load.");
     return;
   }
 
-  select.innerHTML = `<option value="">Select category</option>`;
+  const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-  data.forEach(cat => {
-    const option = document.createElement("option");
-    option.value = cat.id;
-    option.textContent = cat.name;
-    select.appendChild(option);
-  });
-}
+  const els = {
+    name: document.getElementById("name"),
+    price: document.getElementById("price"),
+    category: document.getElementById("category"),
+    tags: document.getElementById("tags"),
+    whatsapp: document.getElementById("whatsapp"),
+    youtube: document.getElementById("youtube"),
+    description: document.getElementById("description"),
+    images: document.getElementById("images"),
+    video: document.getElementById("video"),
+    dropZone: document.getElementById("dropZone"),
+    preview: document.getElementById("preview"),
+    liveImage: document.getElementById("liveImage"),
+    liveName: document.getElementById("liveName"),
+    livePrice: document.getElementById("livePrice"),
+    liveDesc: document.getElementById("liveDesc")
+  };
 
-function updateLivePreview() {
-  document.getElementById("liveName").textContent =
-    document.getElementById("name").value || "Product Name";
+  let selectedImages = [];
 
-  document.getElementById("livePrice").textContent =
-    document.getElementById("price").value || "₦0";
-
-  document.getElementById("liveDesc").textContent =
-    document.getElementById("description").value || "Description preview...";
-}
-
-["name","price","description"].forEach(id => {
-  document.getElementById(id).addEventListener("input", updateLivePreview);
-});
-
-const dropZone = document.getElementById("dropZone");
-const imageInput = document.getElementById("images");
-
-dropZone.addEventListener("click", () => imageInput.click());
-
-dropZone.addEventListener("dragover", e => {
-  e.preventDefault();
-  dropZone.classList.add("dragover");
-});
-
-dropZone.addEventListener("dragleave", () => {
-  dropZone.classList.remove("dragover");
-});
-
-dropZone.addEventListener("drop", e => {
-  e.preventDefault();
-  dropZone.classList.remove("dragover");
-  handleFiles(e.dataTransfer.files);
-});
-
-imageInput.addEventListener("change", e => {
-  handleFiles(e.target.files);
-});
-
-function handleFiles(files) {
-  selectedImages = [...files].slice(0, 10);
-
-  const preview = document.getElementById("preview");
-  preview.innerHTML = "";
-
-  selectedImages.forEach(file => {
-    const url = URL.createObjectURL(file);
-    const img = document.createElement("img");
-    img.src = url;
-    preview.appendChild(img);
-  });
-
-  if (selectedImages.length) {
-    document.getElementById("liveImage").src =
-      URL.createObjectURL(selectedImages[0]);
+  function toast(msg, type = "success") {
+    const div = document.createElement("div");
+    div.className = `toast ${type}`;
+    div.textContent = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
   }
-}
 
-async function getUploadData(file) {
-  const res = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${supabaseKey}`
-    },
-    body: JSON.stringify({
-      fileName: file.name,
-      fileType: file.type,
-      folder: "products"
-    })
-  });
+  function updateLive() {
+    els.liveName.textContent = els.name.value || "Product Name";
+    els.livePrice.textContent = els.price.value || "₦0";
+    els.liveDesc.textContent =
+      els.description.value || "Description preview...";
+  }
 
-  return await res.json();
-}
+  async function loadCategories() {
+    try {
+      els.category.innerHTML = `<option value="">Loading...</option>`;
 
-async function uploadFile(file) {
-  const meta = await getUploadData(file);
+      const { data, error } = await supabaseClient
+        .from("categories")
+        .select("id,name")
+        .order("name");
 
-  await fetch(meta.uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type
-    },
-    body: file
-  });
+      console.log("CATEGORY DATA:", data, error);
 
-  return meta.publicUrl;
-}
+      if (error) throw error;
 
-async function submitProduct() {
-  try {
-    toast("Uploading product...");
+      els.category.innerHTML = `<option value="">Select category</option>`;
 
-    const imageUrls = [];
+      if (!data || data.length === 0) {
+        els.category.innerHTML = `<option value="">No categories found</option>`;
+        return;
+      }
 
-    for (const file of selectedImages) {
-      const url = await uploadFile(file);
-      imageUrls.push(url);
+      data.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat.id;
+        option.textContent = cat.name;
+        els.category.appendChild(option);
+      });
+
+    } catch (error) {
+      console.error("Category error:", error);
+      els.category.innerHTML = `<option value="">Failed to load</option>`;
+      toast("Failed to load categories", "error");
     }
+  }
 
-    let videoUrl = null;
-    const videoFile = document.getElementById("video").files[0];
+  function handleFiles(fileList) {
+    const files = Array.from(fileList)
+      .filter(file => file.type.startsWith("image/"))
+      .slice(0, 10);
 
-    if (videoFile) {
-      videoUrl = await uploadFile(videoFile);
-    }
+    selectedImages = files;
+    els.preview.innerHTML = "";
 
-    const { error } = await supabase.rpc("create_product", {
-      p_name: document.getElementById("name").value,
-      p_price: document.getElementById("price").value,
-      p_image_urls: imageUrls,
-      p_description: document.getElementById("description").value,
-      p_whatsapp_number: document.getElementById("whatsapp").value,
-      p_category_id: document.getElementById("category").value || null,
-      p_tags: document.getElementById("tags").value,
-      p_video_url: videoUrl,
-      p_youtube_url: document.getElementById("youtube").value || null,
-      p_sort_order: 0
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+
+      reader.onload = e => {
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        els.preview.appendChild(img);
+
+        if (index === 0) {
+          els.liveImage.src = e.target.result;
+        }
+      };
+
+      reader.readAsDataURL(file);
     });
 
-    if (error) throw error;
-
-    toast("Product uploaded successfully");
-  } catch (err) {
-    console.error(err);
-    toast(err.message || "Upload failed", "error");
+    console.log("Selected files:", selectedImages);
   }
-}
 
-loadCategories();
-updateLivePreview();
+  els.dropZone.addEventListener("click", () => {
+    els.images.click();
+  });
+
+  els.dropZone.addEventListener("dragover", e => {
+    e.preventDefault();
+    els.dropZone.classList.add("dragover");
+  });
+
+  els.dropZone.addEventListener("dragleave", () => {
+    els.dropZone.classList.remove("dragover");
+  });
+
+  els.dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    els.dropZone.classList.remove("dragover");
+    handleFiles(e.dataTransfer.files);
+  });
+
+  els.images.addEventListener("change", e => {
+    handleFiles(e.target.files);
+  });
+
+  ["name", "price", "description"].forEach(id => {
+    els[id].addEventListener("input", updateLive);
+  });
+
+  window.submitProduct = async function () {
+    try {
+      console.log("Submitting...");
+      toast("Uploading product...");
+
+      const imageUrls = [];
+
+      for (const file of selectedImages) {
+        const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+            folder: "products"
+          })
+        });
+
+        const meta = await response.json();
+        console.log("Upload meta:", meta);
+
+        await fetch(meta.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type
+          },
+          body: file
+        });
+
+        imageUrls.push(meta.publicUrl);
+      }
+
+      let uploadedVideo = null;
+      const videoFile = els.video.files[0];
+
+      if (videoFile) {
+        const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({
+            fileName: videoFile.name,
+            fileType: videoFile.type,
+            folder: "products"
+          })
+        });
+
+        const meta = await response.json();
+
+        await fetch(meta.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": videoFile.type
+          },
+          body: videoFile
+        });
+
+        uploadedVideo = meta.publicUrl;
+      }
+
+      const { error } = await supabaseClient.rpc("create_product", {
+        p_name: els.name.value,
+        p_price: els.price.value,
+        p_image_urls: imageUrls,
+        p_description: els.description.value,
+        p_whatsapp_number: els.whatsapp.value,
+        p_category_id: els.category.value || null,
+        p_tags: els.tags.value,
+        p_video_url: uploadedVideo,
+        p_youtube_url: els.youtube.value || null,
+        p_sort_order: 0
+      });
+
+      if (error) throw error;
+
+      toast("Product uploaded successfully");
+      console.log("Upload complete");
+
+    } catch (error) {
+      console.error(error);
+      toast(error.message || "Upload failed", "error");
+    }
+  };
+
+  updateLive();
+  await loadCategories();
+});
 </script>
-
 </body>
 </html>
