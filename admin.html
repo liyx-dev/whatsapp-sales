@@ -3,29 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liyog Admin Upload</title>
+  <title>Liyog Admin Upload | Premium Edition</title>
 
   <link rel="stylesheet" href="https://liyx-dev.github.io/whatsapp-sales/output.css">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
   <style>
-    .hidden-file {
-      display: none;
-    }
-
-    .preview-grid img {
-      width: 100%;
-      height: 90px;
-      object-fit: cover;
-      border-radius: 16px;
-    }
-
+    /* UTILITIES & OVERRIDES */
+    .hidden-file { display: none; }
+    
     .drop-zone.dragover {
       border-color: var(--color-liyog-green);
       background: rgba(40,164,40,.05);
     }
 
+    /* TOAST ALERTS */
     .toast {
       position: fixed;
       top: 20px;
@@ -35,80 +29,250 @@
       color: white;
       z-index: 9999;
       box-shadow: 0 12px 30px rgba(0,0,0,.15);
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast.success { background: #28A428; }
+    .toast.error { background: #FF3B30; }
+    .toast.info { background: #1877F2; }
+
+    /* ERROR ANIMATION */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .animate-shake { animation: shake 0.3s ease-in-out; }
+    .input-error {
+      border-color: var(--color-liyog-red) !important;
+      box-shadow: 0 0 0 3px rgba(255,59,48,.15) !important;
     }
 
-    .toast.success {
-      background: #28A428;
+    /* LOADING SPINNER */
+    .spinner {
+      border: 3px solid rgba(255,255,255,.3);
+      border-top-color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* IMAGE PREVIEW ITEMS (Drag & Drop) */
+    .preview-item {
+      position: relative;
+      cursor: grab;
+      border-radius: 16px;
+      overflow: hidden;
+      aspect-ratio: 1;
+    }
+    .preview-item:active { cursor: grabbing; }
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .preview-item .remove-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(255, 59, 48, 0.9);
+      color: white;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background 0.2s;
+      z-index: 10;
+    }
+    .preview-item .remove-btn:hover { background: #FF3B30; }
+    .sortable-ghost { opacity: 0.4; }
+
+    /* PROGRESS BAR */
+    .progress-container {
+      display: none;
+      background: #f1f5f9;
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--color-liyog-green);
+      width: 0%;
+      transition: width 0.3s ease;
     }
 
-    .toast.error {
-      background: #FF3B30;
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-content {
+      background: #111;
+      width: 100%;
+      max-width: 800px;
+      border-radius: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 16/9;
+    }
+    .modal-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 10001;
     }
   </style>
 </head>
 <body>
 
 <div class="min-h-screen p-4 md:p-8">
-  <div class="max-w-5xl mx-auto">
+  <div class="max-w-6xl mx-auto">
 
-    <!-- HEADER -->
     <div class="glass rounded-3xl px-6 py-5 mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-liyog-black">Product Upload</h1>
-        <p class="text-sm text-slate-500">Create premium product listings</p>
+        <p class="text-sm text-slate-500">Next-Gen Premium Listing Portal</p>
       </div>
-      <div class="bg-liyog-green text-white px-4 py-2 rounded-full text-sm font-semibold">
-        Admin
+      <div class="bg-liyog-green text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+        Admin Live
       </div>
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-6">
+    <div class="grid lg:grid-cols-12 gap-8">
 
-      <!-- FORM -->
-      <div class="card-premium p-6 animate-fade-up">
-        <h2 class="text-xl font-semibold mb-5">Product Details</h2>
+      <div class="lg:col-span-7 card-premium p-6 md:p-8 animate-fade-up">
+        <h2 class="text-xl font-semibold mb-6 text-liyog-black">Product Details</h2>
 
-        <div class="space-y-4">
-          <input id="name" class="input-premium" placeholder="Product name">
-          <input id="price" class="input-premium" placeholder="Price">
-          <select id="category" class="input-premium"></select>
-          <input id="tags" class="input-premium" placeholder="Tags (comma separated)">
-          <input id="whatsapp" class="input-premium" placeholder="WhatsApp number">
-          <input id="youtube" class="input-premium" placeholder="Optional YouTube URL">
-          <textarea id="description" class="input-premium min-h-[120px]" placeholder="Product description"></textarea>
+        <div class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="text-sm font-semibold text-slate-600 mb-1 block">Product Name *</label>
+              <input id="name" type="text" class="input-premium" placeholder="e.g. Premium Sneaker">
+            </div>
+            <div>
+              <label class="text-sm font-semibold text-slate-600 mb-1 block">Price (₦) *</label>
+              <input id="price" type="number" inputmode="numeric" class="input-premium" placeholder="0">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="text-sm font-semibold text-slate-600 mb-1 block">Category</label>
+              <select id="category" class="input-premium"></select>
+            </div>
+            <div>
+              <label class="text-sm font-semibold text-slate-600 mb-1 block">Tags</label>
+              <input id="tags" type="text" class="input-premium" placeholder="e.g. shoes, fashion (comma separated)">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-semibold text-slate-600 mb-1 block">WhatsApp Number *</label>
+            <input id="whatsapp" type="tel" class="input-premium" placeholder="e.g. 2348000000000">
+            <p class="text-xs text-slate-400 mt-1">Include country code, no spaces or +</p>
+          </div>
+
+          <div>
+            <label class="text-sm font-semibold text-slate-600 mb-1 block">YouTube URL (Optional)</label>
+            <div class="flex gap-2">
+              <input id="youtube" type="url" class="input-premium flex-1" placeholder="https://youtube.com/...">
+              <button onclick="previewYouTube()" class="bg-slate-100 text-slate-600 px-4 rounded-2xl font-semibold hover:bg-slate-200 transition">Preview</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm font-semibold text-slate-600 mb-1 block">Description</label>
+            <textarea id="description" class="input-premium min-h-[120px]" placeholder="Detailed product description..."></textarea>
+          </div>
         </div>
 
-        <!-- IMAGE UPLOAD -->
-        <div class="mt-6">
-          <label class="font-semibold text-sm mb-2 block">Upload Images (max 10)</label>
-          <div id="dropZone" class="drop-zone border-2 border-dashed border-slate-300 rounded-3xl p-8 text-center cursor-pointer">
-            <p class="text-slate-500">Tap or drag images here</p>
+        <div class="mt-8">
+          <div class="flex items-center justify-between mb-2">
+            <label class="font-semibold text-sm text-slate-600 block">Upload Images (max 10)</label>
+            <span class="text-xs text-slate-400">Drag to reorder</span>
+          </div>
+          
+          <div id="dropZone" class="drop-zone border-2 border-dashed border-slate-300 rounded-3xl p-10 text-center cursor-pointer transition-all hover:border-liyog-green hover:bg-slate-50">
+            <div class="bg-slate-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            </div>
+            <p class="text-slate-600 font-medium">Tap or drag images here</p>
+            <p class="text-xs text-slate-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
             <input id="images" type="file" multiple accept="image/*" class="hidden-file">
           </div>
-          <div id="preview" class="preview-grid grid grid-cols-3 gap-3 mt-4"></div>
+          <div id="preview" class="grid grid-cols-4 sm:grid-cols-5 gap-3 mt-4"></div>
         </div>
 
-        <!-- VIDEO -->
-        <div class="mt-6">
-          <label class="font-semibold text-sm mb-2 block">Optional Video</label>
-          <input id="video" type="file" accept="video/*" class="input-premium">
+        <div class="mt-8">
+          <label class="font-semibold text-sm text-slate-600 mb-2 block">Optional Video Upload</label>
+          <div class="flex gap-2 items-center">
+            <input id="video" type="file" accept="video/*" class="input-premium flex-1">
+            <button id="previewVideoBtn" onclick="previewLocalVideo()" class="bg-slate-100 text-slate-600 px-4 py-3 rounded-2xl font-semibold hover:bg-slate-200 transition hidden">Play</button>
+          </div>
         </div>
 
-        <button onclick="submitProduct()" class="btn-primary w-full mt-8">
-          Upload Product
-        </button>
+        <div class="mt-10 border-t border-slate-100 pt-6">
+          <button id="submitBtn" onclick="submitProduct()" class="btn-primary w-full flex items-center justify-center gap-2 text-lg py-4">
+            <span>Upload Product</span>
+          </button>
+          
+          <p id="statusText" class="text-center text-sm text-slate-500 mt-3 hidden font-medium"></p>
+          <div id="progressContainer" class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- LIVE PREVIEW -->
-      <div class="card-premium p-6 animate-fade-up">
-        <h2 class="text-xl font-semibold mb-5">Live Preview</h2>
+      <div class="lg:col-span-5 relative">
+        <div class="sticky top-8 card-premium p-6 animate-fade-up">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xl font-semibold text-liyog-black">Live Preview</h2>
+            <span class="bg-liyog-green/10 text-liyog-green text-xs font-bold px-3 py-1 rounded-full">Customer View</span>
+          </div>
 
-        <div id="liveCard" class="rounded-3xl overflow-hidden border border-slate-100">
-          <img id="liveImage" src="https://placehold.co/600x400" class="w-full h-64 object-cover">
-          <div class="p-5">
-            <h3 id="liveName" class="font-bold text-lg">Product Name</h3>
-            <p id="livePrice" class="text-liyog-green font-semibold mt-2">₦0</p>
-            <p id="liveDesc" class="text-sm text-slate-500 mt-3">Description preview...</p>
+          <div id="liveCard" class="rounded-3xl overflow-hidden border border-slate-100 bg-white shadow-sm transition-all duration-300">
+            <img id="liveImage" src="https://placehold.co/600x400?text=Image+Preview" class="w-full aspect-[4/3] object-cover bg-slate-50">
+            <div class="p-5">
+              <div class="flex justify-between items-start gap-3">
+                <h3 id="liveName" class="font-bold text-lg text-liyog-black leading-tight break-words flex-1">Product Name</h3>
+                <p id="livePrice" class="text-liyog-green font-bold text-lg whitespace-nowrap">₦0</p>
+              </div>
+              <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <p id="liveDesc" class="text-sm text-slate-600 leading-relaxed line-clamp-4 break-words">Description preview will appear here...</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -117,18 +281,24 @@
   </div>
 </div>
 
+<div id="mediaModal" class="modal-overlay">
+  <div class="relative w-full max-w-4xl mx-auto flex flex-col">
+    <div class="modal-close" onclick="closeModal()">&times;</div>
+    <div id="modalContent" class="modal-content shadow-2xl">
+      </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
+  // SUPABASE & RENDER CONFIGURATION (Unchanged)
   const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
-
-  if (!window.supabase) {
-    alert("Supabase library failed to load.");
-    return;
-  }
+  const renderUrl = "https://video-compressor-ilg5.onrender.com";
 
   const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+  // DOM ELEMENTS
   const els = {
     name: document.getElementById("name"),
     price: document.getElementById("price"),
@@ -144,206 +314,416 @@ document.addEventListener("DOMContentLoaded", async () => {
     liveImage: document.getElementById("liveImage"),
     liveName: document.getElementById("liveName"),
     livePrice: document.getElementById("livePrice"),
-    liveDesc: document.getElementById("liveDesc")
+    liveDesc: document.getElementById("liveDesc"),
+    submitBtn: document.getElementById("submitBtn"),
+    statusText: document.getElementById("statusText"),
+    progressContainer: document.getElementById("progressContainer"),
+    progressBar: document.getElementById("progressBar"),
+    previewVideoBtn: document.getElementById("previewVideoBtn"),
+    mediaModal: document.getElementById("mediaModal"),
+    modalContent: document.getElementById("modalContent")
   };
 
-  let selectedImages = [];
+  // STATE
+  let selectedImages = []; // Array of objects: { id, file, url }
+  let uploading = false;
+  let videoTimerInterval = null;
 
-  function toast(msg, type = "success") {
+  // INITIALIZE DRAG & DROP SORTING
+  Sortable.create(els.preview, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    onEnd: function (evt) {
+      // Reorder array based on DOM change
+      const item = selectedImages.splice(evt.oldIndex, 1)[0];
+      selectedImages.splice(evt.newIndex, 0, item);
+      updateLive(); // First image might have changed
+    }
+  });
+
+  // TOAST NOTIFICATIONS
+  function toast(msg, type = "success", duration = 4000) {
     const div = document.createElement("div");
     div.className = `toast ${type}`;
     div.textContent = msg;
     document.body.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
+    
+    // Trigger animation
+    requestAnimationFrame(() => div.classList.add("show"));
+    
+    setTimeout(() => {
+      div.classList.remove("show");
+      setTimeout(() => div.remove(), 300);
+    }, duration);
   }
 
+  // LIVE PREVIEW UPDATER
   function updateLive() {
-    els.liveName.textContent = els.name.value || "Product Name";
-    els.livePrice.textContent = els.price.value || "₦0";
-    els.liveDesc.textContent =
-      els.description.value || "Description preview...";
+    els.liveName.textContent = els.name.value.trim() || "Product Name";
+    
+    // Format price with commas
+    const rawPrice = els.price.value;
+    els.livePrice.textContent = rawPrice ? `₦${Number(rawPrice).toLocaleString()}` : "₦0";
+    
+    els.liveDesc.textContent = els.description.value.trim() || "Description preview will appear here...";
+    
+    // Update live image based on the first item in selectedImages
+    if (selectedImages.length > 0) {
+      els.liveImage.src = selectedImages[0].url;
+    } else {
+      els.liveImage.src = "https://placehold.co/600x400?text=Image+Preview";
+    }
   }
 
+  // CATEGORIES
   async function loadCategories() {
     try {
-      els.category.innerHTML = `<option value="">Loading...</option>`;
-
-      const { data, error } = await supabaseClient
-        .from("categories")
-        .select("id,name")
-        .order("name");
-
-      console.log("CATEGORY DATA:", data, error);
-
+      els.category.innerHTML = `<option>Loading categories...</option>`;
+      const { data, error } = await supabaseClient.from("categories").select("id,name").order("name");
       if (error) throw error;
-
-      els.category.innerHTML = `<option value="">Select category</option>`;
-
-      if (!data || data.length === 0) {
-        els.category.innerHTML = `<option value="">No categories found</option>`;
-        return;
-      }
-
+      
+      els.category.innerHTML = `<option value="">Select a category</option>`;
       data.forEach(cat => {
         const option = document.createElement("option");
         option.value = cat.id;
         option.textContent = cat.name;
         els.category.appendChild(option);
       });
-
-    } catch (error) {
-      console.error("Category error:", error);
-      els.category.innerHTML = `<option value="">Failed to load</option>`;
-      toast("Failed to load categories", "error");
+    } catch (err) {
+      console.error(err);
+      toast("Failed to load categories. Please refresh.", "error");
     }
   }
 
-  function handleFiles(fileList) {
-    const files = Array.from(fileList)
-      .filter(file => file.type.startsWith("image/"))
-      .slice(0, 10);
-
-    selectedImages = files;
-    els.preview.innerHTML = "";
-
-    files.forEach((file, index) => {
+  // IMAGE HANDLING & OPTIMIZATION
+  async function optimizeImage(file) {
+    return new Promise(resolve => {
+      const img = new Image();
       const reader = new FileReader();
-
-      reader.onload = e => {
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        els.preview.appendChild(img);
-
-        if (index === 0) {
-          els.liveImage.src = e.target.result;
-        }
+      reader.onload = e => img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxWidth = 1600;
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+        }, "image/webp", 0.75);
       };
-
       reader.readAsDataURL(file);
     });
-
-    console.log("Selected files:", selectedImages);
   }
 
-  els.dropZone.addEventListener("click", () => {
-    els.images.click();
-  });
+  function renderPreviews() {
+    els.preview.innerHTML = "";
+    selectedImages.forEach(imageObj => {
+      const div = document.createElement("div");
+      div.className = "preview-item animate-fade-up";
+      div.setAttribute("data-id", imageObj.id);
+      
+      const img = document.createElement("img");
+      img.src = imageObj.url;
+      
+      const btn = document.createElement("div");
+      btn.className = "remove-btn";
+      btn.innerHTML = "&times;";
+      btn.onclick = (e) => {
+        e.stopPropagation(); // Prevent drag trigger
+        removeImage(imageObj.id);
+      };
+      
+      div.appendChild(img);
+      div.appendChild(btn);
+      els.preview.appendChild(div);
+    });
+    updateLive();
+  }
 
-  els.dropZone.addEventListener("dragover", e => {
-    e.preventDefault();
-    els.dropZone.classList.add("dragover");
-  });
+  function removeImage(id) {
+    // Revoke URL to prevent memory leaks
+    const imgToRemove = selectedImages.find(img => img.id === id);
+    if(imgToRemove) URL.revokeObjectURL(imgToRemove.url);
+    
+    selectedImages = selectedImages.filter(img => img.id !== id);
+    renderPreviews();
+  }
 
-  els.dropZone.addEventListener("dragleave", () => {
-    els.dropZone.classList.remove("dragover");
-  });
+  async function handleFiles(fileList) {
+    const files = Array.from(fileList).filter(file => file.type.startsWith("image/"));
+    
+    // Prevent exceeding 10 images
+    if (selectedImages.length + files.length > 10) {
+      toast("Maximum 10 images allowed.", "error");
+      return;
+    }
 
-  els.dropZone.addEventListener("drop", e => {
-    e.preventDefault();
-    els.dropZone.classList.remove("dragover");
-    handleFiles(e.dataTransfer.files);
-  });
+    // UX Feedback for processing images locally
+    els.dropZone.style.opacity = "0.5";
+    
+    for (let file of files) {
+      const optimized = await optimizeImage(file);
+      const url = URL.createObjectURL(optimized);
+      selectedImages.push({
+        id: Math.random().toString(36).substr(2, 9),
+        file: optimized,
+        url: url
+      });
+    }
+    
+    els.dropZone.style.opacity = "1";
+    renderPreviews();
+    // Reset file input to allow uploading the same file again if removed
+    els.images.value = "";
+  }
 
-  els.images.addEventListener("change", e => {
-    handleFiles(e.target.files);
+  // UPLOAD LOGIC
+  async function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadFile(file) {
+    const fileBase64 = await fileToBase64(file);
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+      body: JSON.stringify({ fileBase64, fileName: file.name, fileType: file.type, folder: "products" })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Upload failed");
+    return result.publicUrl;
+  }
+
+  async function compressVideo(file) {
+    const formData = new FormData();
+    formData.append("video", file);
+    
+    try {
+      const response = await fetch(`${renderUrl}/compress-video`, {
+        method: "POST",
+        body: formData
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Video compression failed");
+      if (!result.publicUrl) throw new Error("Compressed video URL missing");
+      return result.publicUrl;
+    } catch (err) {
+      console.error("VIDEO COMPRESSION ERROR:", err);
+      updateStatus("Compression failed. Uploading original video...", true);
+      return await uploadFile(file);
+    }
+  }
+
+  // UI STATE MANAGEMENT
+  function setStatus(loading, text = "", progress = 0) {
+    if (loading) {
+      els.submitBtn.disabled = true;
+      els.submitBtn.innerHTML = `<div class="spinner"></div> <span>${text || 'Processing...'}</span>`;
+      els.statusText.classList.remove("hidden");
+      els.statusText.textContent = text;
+      els.progressContainer.style.display = "block";
+      els.progressBar.style.width = `${progress}%`;
+    } else {
+      els.submitBtn.disabled = false;
+      els.submitBtn.innerHTML = `<span>Upload Product</span>`;
+      els.statusText.classList.add("hidden");
+      els.progressContainer.style.display = "none";
+      els.progressBar.style.width = `0%`;
+      if(videoTimerInterval) { clearInterval(videoTimerInterval); videoTimerInterval = null; }
+    }
+  }
+
+  function updateStatus(text, isWarning = false) {
+    els.statusText.textContent = text;
+    els.statusText.style.color = isWarning ? "var(--color-liyog-orange)" : "var(--color-slate-500)";
+  }
+
+  function resetForm() {
+    // Clear inputs
+    ["name", "price", "tags", "whatsapp", "youtube", "description"].forEach(id => els[id].value = "");
+    els.category.value = "";
+    els.video.value = "";
+    els.previewVideoBtn.classList.add("hidden");
+    
+    // Clear images
+    selectedImages.forEach(img => URL.revokeObjectURL(img.url));
+    selectedImages = [];
+    renderPreviews();
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // VALIDATION
+  function markInvalid(el) {
+    el.classList.add("input-error", "animate-shake");
+    setTimeout(() => el.classList.remove("animate-shake"), 400);
+  }
+
+  function validateForm() {
+    document.querySelectorAll(".input-error").forEach(el => el.classList.remove("input-error"));
+    let isValid = true;
+
+    if (!els.name.value.trim()) { markInvalid(els.name); isValid = false; }
+    
+    const priceVal = els.price.value.trim();
+    if (!priceVal || isNaN(priceVal) || Number(priceVal) < 0) { markInvalid(els.price); isValid = false; }
+    
+    const waVal = els.whatsapp.value.replace(/\s+/g, '');
+    if (!waVal || !/^[0-9]{10,15}$/.test(waVal)) { 
+      markInvalid(els.whatsapp); 
+      isValid = false; 
+      if(isValid) toast("WhatsApp must be 10-15 digits only.", "error"); // Only show if this is the only error
+    }
+
+    if (els.youtube.value) {
+      const ytRegex = /^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
+      if (!ytRegex.test(els.youtube.value)) { markInvalid(els.youtube); isValid = false; }
+    }
+    
+    if (selectedImages.length === 0) {
+      els.dropZone.classList.add("input-error", "animate-shake");
+      setTimeout(() => els.dropZone.classList.remove("animate-shake"), 400);
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  // MODAL PREVIEWS
+  window.previewYouTube = () => {
+    const url = els.youtube.value.trim();
+    if(!url) return toast("Enter a YouTube URL first", "info");
+    
+    // Basic extraction to embed format
+    let videoId = "";
+    if(url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1]?.split("?")[0];
+    else if(url.includes("watch?v=")) videoId = url.split("watch?v=")[1]?.split("&")[0];
+    
+    if(!videoId) return toast("Invalid YouTube URL format", "error");
+
+    els.modalContent.innerHTML = `<iframe w-full h-full style="width:100%; height:100%;" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    els.mediaModal.classList.add("active");
+  };
+
+  window.previewLocalVideo = () => {
+    const file = els.video.files[0];
+    if(!file) return;
+    const url = URL.createObjectURL(file);
+    els.modalContent.innerHTML = `<video src="${url}" style="width:100%; height:100%; object-fit:contain;" controls autoplay></video>`;
+    els.mediaModal.classList.add("active");
+  };
+
+  window.closeModal = () => {
+    els.mediaModal.classList.remove("active");
+    setTimeout(() => { els.modalContent.innerHTML = ""; }, 300); // Clear memory after transition
+  };
+
+  // EVENT LISTENERS
+  els.dropZone.addEventListener("click", () => els.images.click());
+  els.dropZone.addEventListener("dragover", e => { e.preventDefault(); els.dropZone.classList.add("dragover"); });
+  els.dropZone.addEventListener("dragleave", () => els.dropZone.classList.remove("dragover"));
+  els.dropZone.addEventListener("drop", e => { e.preventDefault(); els.dropZone.classList.remove("dragover"); handleFiles(e.dataTransfer.files); });
+  els.images.addEventListener("change", e => handleFiles(e.target.files));
+  
+  els.video.addEventListener("change", (e) => {
+    if(e.target.files.length > 0) els.previewVideoBtn.classList.remove("hidden");
+    else els.previewVideoBtn.classList.add("hidden");
   });
 
   ["name", "price", "description"].forEach(id => {
     els[id].addEventListener("input", updateLive);
   });
 
+  // MAIN SUBMIT FUNCTION
   window.submitProduct = async function () {
+    if (uploading) return;
+    
+    if (!validateForm()) {
+      toast("Please fix the highlighted errors", "error");
+      return;
+    }
+
+    uploading = true;
+    setStatus(true, "Initializing upload...", 5);
+
     try {
-      console.log("Submitting...");
-      toast("Uploading product...");
-
+      // 1. Upload Images
       const imageUrls = [];
-
-      for (const file of selectedImages) {
-        const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseKey}`
-          },
-          body: JSON.stringify({
-            fileName: file.name,
-            fileType: file.type,
-            folder: "products"
-          })
-        });
-
-        const meta = await response.json();
-        console.log("Upload meta:", meta);
-
-        await fetch(meta.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type
-          },
-          body: file
-        });
-
-        imageUrls.push(meta.publicUrl);
+      const totalImages = selectedImages.length;
+      
+      for (let i = 0; i < totalImages; i++) {
+        let percentage = 5 + ((i / totalImages) * 40); // 5% to 45% of total progress
+        setStatus(true, `Uploading image ${i + 1} of ${totalImages}...`, percentage);
+        imageUrls.push(await uploadFile(selectedImages[i].file));
       }
 
+      // 2. Upload Video (if exists)
       let uploadedVideo = null;
       const videoFile = els.video.files[0];
 
       if (videoFile) {
-        const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseKey}`
-          },
-          body: JSON.stringify({
-            fileName: videoFile.name,
-            fileType: videoFile.type,
-            folder: "products"
-          })
-        });
+        if (videoFile.size > 50 * 1024 * 1024) throw new Error("Video must be under 50MB");
+        
+        setStatus(true, "Compressing video (this may take a minute)...", 50);
+        
+        let seconds = 0;
+        videoTimerInterval = setInterval(() => {
+          seconds++;
+          updateStatus(`Compressing video... ${seconds}s elapsed`);
+        }, 1000);
 
-        const meta = await response.json();
-
-        await fetch(meta.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": videoFile.type
-          },
-          body: videoFile
-        });
-
-        uploadedVideo = meta.publicUrl;
+        uploadedVideo = await compressVideo(videoFile);
+        clearInterval(videoTimerInterval);
+        videoTimerInterval = null;
       }
 
+      // 3. Finalize Database Entry
+      setStatus(true, "Finalizing product creation...", 90);
+
       const { error } = await supabaseClient.rpc("create_product", {
-        p_name: els.name.value,
-        p_price: els.price.value,
+        p_name: els.name.value.trim(),
+        p_price: Number(els.price.value),
         p_image_urls: imageUrls,
-        p_description: els.description.value,
-        p_whatsapp_number: els.whatsapp.value,
+        p_description: els.description.value.trim(),
+        p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
         p_category_id: els.category.value || null,
-        p_tags: els.tags.value,
+        p_tags: els.tags.value.trim(),
         p_video_url: uploadedVideo,
-        p_youtube_url: els.youtube.value || null,
+        p_youtube_url: els.youtube.value.trim() || null,
         p_sort_order: 0
       });
 
       if (error) throw error;
 
-      toast("Product uploaded successfully");
-      console.log("Upload complete");
+      setStatus(true, "Done!", 100);
+      toast("Product listed successfully!", "success", 5000);
+      
+      // Cleanup UI
+      setTimeout(() => { resetForm(); }, 500);
 
     } catch (error) {
       console.error(error);
       toast(error.message || "Upload failed", "error");
+    } finally {
+      uploading = false;
+      setStatus(false);
     }
   };
 
+  // INITIALIZATION
   updateLive();
   await loadCategories();
 });
 </script>
+
 </body>
 </html>
+
