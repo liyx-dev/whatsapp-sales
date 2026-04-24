@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Liyog Admin Upload | Premium Edition</title>
 
   <link rel="stylesheet" href="https://liyx-dev.github.io/whatsapp-sales/output.css">
@@ -64,40 +64,85 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* IMAGE PREVIEW ITEMS (Drag & Drop) */
+    /* =========================================
+       GUARANTEED GRID LAYOUT FIX (PURE CSS) 
+       ========================================= */
+    #preview {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important; /* Forces exactly 3 columns */
+      gap: 10px !important; /* Perfect spacing for mobile */
+      width: 100% !important;
+      margin-top: 20px !important;
+    }
+
+    @media (min-width: 768px) {
+      #preview {
+        grid-template-columns: repeat(4, 1fr) !important; /* 4 columns on tablets/desktop */
+        gap: 16px !important;
+      }
+    }
+
+    /* IMAGE PREVIEW ITEMS */
     .preview-item {
       position: relative;
       cursor: grab;
-      border-radius: 16px;
+      border-radius: 12px; /* iOS style premium curve */
       overflow: hidden;
-      aspect-ratio: 1;
+      aspect-ratio: 1 / 1; /* Keeps them perfect squares */
+      width: 100%;
+      background: #f8fafc;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(226, 232, 240, 0.8);
     }
-    .preview-item:active { cursor: grabbing; }
+
+    .preview-item:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+    }
+
+    .preview-item:active {
+      cursor: grabbing;
+    }
+
     .preview-item img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: cover; /* Ensures images fill the square without stretching */
+      position: absolute;
+      top: 0;
+      left: 0;
     }
+
     .preview-item .remove-btn {
       position: absolute;
-      top: 4px;
-      right: 4px;
-      background: rgba(255, 59, 48, 0.9);
-      color: white;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
+      background: rgba(15,23,42,0.85);
+      color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
       font-size: 14px;
       font-weight: bold;
-      transition: background 0.2s;
-      z-index: 10;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(4px);
+      z-index: 5;
     }
-    .preview-item .remove-btn:hover { background: #FF3B30; }
-    .sortable-ghost { opacity: 0.4; }
+
+    .preview-item .remove-btn:hover {
+      background: rgba(255,59,48,0.95);
+      transform: scale(1.1);
+    }
+
+    .sortable-ghost {
+      opacity: 0.35;
+      transform: scale(0.95);
+    }
 
     /* PROGRESS BAR */
     .progress-container {
@@ -144,12 +189,25 @@
     }
     .modal-close {
       position: absolute;
-      top: -40px;
-      right: 0;
+      top: 14px;
+      right: 14px;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.65);
       color: white;
-      font-size: 2rem;
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: bold;
       cursor: pointer;
-      z-index: 10001;
+      z-index: 10002;
+      transition: all 0.25s ease;
+    }
+    .modal-close:hover {
+      background: rgba(255,59,48,0.9);
+      transform: scale(1.05);
     }
   </style>
 </head>
@@ -181,7 +239,7 @@
               <input id="name" type="text" class="input-premium" placeholder="e.g. Premium Sneaker">
             </div>
             <div>
-              <label class="text-sm font-semibold text-slate-600 mb-1 block">Price (₦) *</label>
+              <label class="text-sm font-semibold text-slate-600 mb-1 block">Price </label>
               <input id="price" type="number" inputmode="numeric" class="input-premium" placeholder="0">
             </div>
           </div>
@@ -231,7 +289,9 @@
             <p class="text-xs text-slate-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
             <input id="images" type="file" multiple accept="image/*" class="hidden-file">
           </div>
-          <div id="preview" class="grid grid-cols-4 sm:grid-cols-5 gap-3 mt-4"></div>
+          
+          <div id="preview"></div>
+          
         </div>
 
         <div class="mt-8">
@@ -267,10 +327,10 @@
             <div class="p-5">
               <div class="flex justify-between items-start gap-3">
                 <h3 id="liveName" class="font-bold text-lg text-liyog-black leading-tight break-words flex-1">Product Name</h3>
-                <p id="livePrice" class="text-liyog-green font-bold text-lg whitespace-nowrap">₦0</p>
+                <p id="livePrice" class="text-liyog-green font-bold text-lg whitespace-nowrap">0</p>
               </div>
               <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <p id="liveDesc" class="text-sm text-slate-600 leading-relaxed line-clamp-4 break-words">Description preview will appear here...</p>
+                <p id="liveDesc" class="text-sm text-slate-600 leading-relaxed line-clamp-4 break-words text-center">Description preview will appear here...</p>
               </div>
             </div>
           </div>
@@ -282,7 +342,7 @@
 </div>
 
 <div id="mediaModal" class="modal-overlay">
-  <div class="relative w-full max-w-4xl mx-auto flex flex-col">
+  <div class="relative w-full max-w-4xl mx-auto">
     <div class="modal-close" onclick="closeModal()">&times;</div>
     <div id="modalContent" class="modal-content shadow-2xl">
       </div>
@@ -363,8 +423,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Format price with commas
     const rawPrice = els.price.value;
-    els.livePrice.textContent = rawPrice ? `₦${Number(rawPrice).toLocaleString()}` : "₦0";
-    
+    els.livePrice.textContent = rawPrice
+  ? `${Number(rawPrice).toLocaleString()}`
+  : "0";    
     els.liveDesc.textContent = els.description.value.trim() || "Description preview will appear here...";
     
     // Update live image based on the first item in selectedImages
@@ -418,29 +479,38 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function renderPreviews() {
-    els.preview.innerHTML = "";
-    selectedImages.forEach(imageObj => {
-      const div = document.createElement("div");
-      div.className = "preview-item animate-fade-up";
-      div.setAttribute("data-id", imageObj.id);
-      
-      const img = document.createElement("img");
-      img.src = imageObj.url;
-      
-      const btn = document.createElement("div");
-      btn.className = "remove-btn";
-      btn.innerHTML = "&times;";
-      btn.onclick = (e) => {
-        e.stopPropagation(); // Prevent drag trigger
-        removeImage(imageObj.id);
-      };
-      
-      div.appendChild(img);
-      div.appendChild(btn);
-      els.preview.appendChild(div);
-    });
-    updateLive();
-  }
+  els.preview.innerHTML = "";
+
+  selectedImages.forEach((imageObj, index) => {
+    const div = document.createElement("div");
+    div.className = "preview-item animate-fade-up";
+    div.setAttribute("data-id", imageObj.id);
+
+    const img = document.createElement("img");
+    img.src = imageObj.url;
+
+    const btn = document.createElement("div");
+    btn.className = "remove-btn";
+    btn.innerHTML = "&times;";
+    btn.title = "Remove image";
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      removeImage(imageObj.id);
+    };
+
+    div.appendChild(img);
+if(index === 0){
+  const badge = document.createElement("div");
+  badge.className = "absolute bottom-2 left-2 bg-liyog-green text-white text-xs font-semibold px-3 py-1 rounded-full z-10";
+  badge.textContent = "Cover";
+  div.appendChild(badge);
+}
+    div.appendChild(btn);
+    els.preview.appendChild(div);
+  });
+
+  updateLive();
+}
 
   function removeImage(id) {
     // Revoke URL to prevent memory leaks
@@ -567,6 +637,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => el.classList.remove("animate-shake"), 400);
   }
 
+function validateSingleField(el, pattern = null) {
+  el.classList.remove("input-error");
+
+  const value = el.value.trim();
+
+  if (!value) return;
+
+  if (pattern && !pattern.test(value)) {
+    el.classList.add("input-error");
+  }
+}
+
   function validateForm() {
     document.querySelectorAll(".input-error").forEach(el => el.classList.remove("input-error"));
     let isValid = true;
@@ -609,7 +691,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     if(!videoId) return toast("Invalid YouTube URL format", "error");
 
-    els.modalContent.innerHTML = `<iframe w-full h-full style="width:100%; height:100%;" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+    els.modalContent.innerHTML = `
+  <iframe
+    src="https://www.youtube.com/embed/${videoId}?autoplay=1"
+    style="width:100%; height:100%;"
+    frameborder="0"
+    allow="autoplay; encrypted-media"
+    allowfullscreen>
+  </iframe>
+`;
     els.mediaModal.classList.add("active");
   };
 
@@ -626,6 +716,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(() => { els.modalContent.innerHTML = ""; }, 300); // Clear memory after transition
   };
 
+els.mediaModal.addEventListener("click", (e) => {
+  if (e.target === els.mediaModal) {
+    closeModal();
+  }
+});
+
   // EVENT LISTENERS
   els.dropZone.addEventListener("click", () => els.images.click());
   els.dropZone.addEventListener("dragover", e => { e.preventDefault(); els.dropZone.classList.add("dragover"); });
@@ -638,9 +734,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     else els.previewVideoBtn.classList.add("hidden");
   });
 
-  ["name", "price", "description"].forEach(id => {
-    els[id].addEventListener("input", updateLive);
-  });
+["name", "price", "description"].forEach(id => {
+  els[id].addEventListener("input", updateLive);
+});
+
+els.name.addEventListener("input", () => {
+  validateSingleField(els.name);
+});
+
+els.price.addEventListener("input", () => {
+  validateSingleField(els.price, /^[0-9]+$/);
+});
+
+els.whatsapp.addEventListener("input", () => {
+  validateSingleField(els.whatsapp, /^[0-9]{10,15}$/);
+});
+
+els.youtube.addEventListener("input", () => {
+  validateSingleField(
+    els.youtube,
+    /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/
+  );
+});
 
   // MAIN SUBMIT FUNCTION
   window.submitProduct = async function () {
@@ -726,4 +841,3 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 </body>
 </html>
-
