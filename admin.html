@@ -579,30 +579,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  async function uploadFile(file) {
+   async function uploadFile(file) {
     const fileBase64 = await fileToBase64(file);
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseKey}`
-      },
-      body: JSON.stringify({
-        fileBase64,
-        fileName: file.name,
-        fileType: file.type,
-        folder: "products"
-      })
-    });
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({
+          fileBase64,
+          fileName: file.name,
+          fileType: file.type,
+          folder: "products"
+        })
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (!response.ok) {
-      throw new Error(result.error || "Upload failed");
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed");
+      }
+
+      return result.publicUrl;
+
+    } catch (error) {
+      // This specifically catches the browser CORS block and gives you a clear toast message
+      if (error.message.includes("Failed to fetch") || error.name === 'TypeError') {
+        throw new Error("CORS Blocked: Please deploy the updated Edge Function on Supabase to allow GitHub uploads.");
+      }
+      throw error;
     }
-
-    return result.publicUrl;
   }
 
 
@@ -874,5 +883,7 @@ els.youtube.addEventListener("input", () => {
 });
 </script>
 <script src="https://bartoos-1.github.io/store/global-error.js"></script>
+
 </body>
 </html>
+
