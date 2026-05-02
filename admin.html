@@ -5,363 +5,1373 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Liyog Admin Upload | Premium Edition</title>
 
-  <link rel="stylesheet" href="https://liyx-dev.github.io/whatsapp-sales/output.css">
+  <!-- Google Fonts: Syne (display) + DM Sans (body) — premium, modern feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- External Tailwind build — show offline banner if it fails -->
+  <link rel="stylesheet" href="https://liyx-dev.github.io/whatsapp-sales/output.css"
+        id="mainStylesheet"
+        onerror="document.getElementById('offlineBanner').style.display='flex'">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
   <style>
-    /* UTILITIES & OVERRIDES */
-    .hidden-file { display: none; }
-    
-    .drop-zone.dragover {
-      border-color: var(--color-liyog-green);
-      background: rgba(40,164,40,.05);
+    /* =============================================
+       LIYOG DESIGN SYSTEM — CORE VARIABLES
+    ============================================= */
+    :root {
+      --liyog-green:       #28A428;
+      --liyog-green-light: #34BF49;
+      --liyog-green-dark:  #228B22;
+      --liyog-deep-green:  #006400;
+      --liyog-gold:        #FFD700;
+      --liyog-orange:      #FF7A00;
+      --liyog-blue:        #1877F2;
+      --liyog-black:       #111111;
+      --liyog-black-light: #1A1A1A;
+      --liyog-red:         #FF3B30;
+      --liyog-red-dark:    #C1271A;
+      --liyog-yellow:      #FFEA00;
+
+      /* Surface / background tokens */
+      --surface-bg:      #f0f4f8;
+      --surface-card:    #ffffff;
+      --surface-soft:    #f8fafc;
+      --border-subtle:   rgba(226,232,240,0.9);
+
+      /* Text */
+      --text-primary:    #0f172a;
+      --text-secondary:  #475569;
+      --text-muted:      #94a3b8;
+
+      /* Fonts */
+      --font-display: 'Syne', sans-serif;
+      --font-body:    'DM Sans', sans-serif;
+
+      /* Radii */
+      --radius-sm:  10px;
+      --radius-md:  14px;
+      --radius-lg:  20px;
+      --radius-xl:  28px;
+
+      /* Shadows */
+      --shadow-sm:   0 2px 8px rgba(15,23,42,0.06);
+      --shadow-md:   0 6px 24px rgba(15,23,42,0.08);
+      --shadow-lg:   0 16px 48px rgba(15,23,42,0.10);
+      --shadow-green: 0 8px 24px rgba(40,164,40,0.25);
     }
 
-    /* TOAST ALERTS */
-    .toast {
+    /* =============================================
+       BASE RESET + TYPOGRAPHY
+    ============================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--surface-bg);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      /* Subtle grid texture for depth */
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(40,164,40,0.04) 0%, transparent 50%),
+        radial-gradient(circle at 80% 90%, rgba(24,119,242,0.04) 0%, transparent 50%);
+    }
+
+    button { cursor: pointer; font-family: var(--font-body); }
+    img { display: block; max-width: 100%; }
+    input, select, textarea { font-family: var(--font-body); }
+
+    /* =============================================
+       OFFLINE BANNER
+    ============================================= */
+    #offlineBanner {
+      display: none;
       position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 14px 18px;
-      border-radius: 14px;
-      color: white;
-      z-index: 9999;
-      box-shadow: 0 12px 30px rgba(0,0,0,.15);
-      transform: translateY(-20px);
-      opacity: 0;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .toast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    .toast.success { background: #28A428; }
-    .toast.error { background: #FF3B30; }
-    .toast.info { background: #1877F2; }
-
-    /* ERROR ANIMATION */
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-    .animate-shake { animation: shake 0.3s ease-in-out; }
-    .input-error {
-      border-color: var(--color-liyog-red) !important;
-      box-shadow: 0 0 0 3px rgba(255,59,48,.15) !important;
-    }
-
-    /* LOADING SPINNER */
-    .spinner {
-      border: 3px solid rgba(255,255,255,.3);
-      border-top-color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* =========================================
-       GUARANTEED GRID LAYOUT FIX (PURE CSS) 
-       ========================================= */
-    #preview {
-      display: grid !important;
-      grid-template-columns: repeat(3, 1fr) !important; /* Forces exactly 3 columns */
-      gap: 10px !important; /* Perfect spacing for mobile */
-      width: 100% !important;
-      margin-top: 20px !important;
-    }
-
-    @media (min-width: 768px) {
-      #preview {
-        grid-template-columns: repeat(4, 1fr) !important; /* 4 columns on tablets/desktop */
-        gap: 16px !important;
-      }
-    }
-
-    /* IMAGE PREVIEW ITEMS */
-    .preview-item {
-      position: relative;
-      cursor: grab;
-      border-radius: 12px; /* iOS style premium curve */
-      overflow: hidden;
-      aspect-ratio: 1 / 1; /* Keeps them perfect squares */
-      width: 100%;
-      background: #f8fafc;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-      transition: all 0.3s ease;
-      border: 1px solid rgba(226, 232, 240, 0.8);
-    }
-
-    .preview-item:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
-    }
-
-    .preview-item:active {
-      cursor: grabbing;
-    }
-
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover; /* Ensures images fill the square without stretching */
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    .preview-item .remove-btn {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: rgba(15,23,42,0.85);
-      color: white;
-      display: flex;
+      top: 0; left: 0; right: 0;
+      z-index: 99999;
+      background: linear-gradient(135deg, var(--liyog-orange), #e65c00);
+      color: #fff;
+      padding: 14px 20px;
+      gap: 12px;
       align-items: center;
       justify-content: center;
       font-size: 14px;
-      font-weight: bold;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(255,122,0,0.4);
+      animation: slideDown 0.4s ease-out;
+    }
+    #offlineBanner .banner-icon { font-size: 20px; flex-shrink: 0; }
+    #offlineBanner strong { color: #FFEA00; }
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* =============================================
+       LAYOUT WRAPPER
+    ============================================= */
+    .admin-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px 60px;
+    }
+    @media (min-width: 768px) {
+      .admin-wrapper { padding: 0 32px 80px; }
+    }
+
+    /* =============================================
+       TOPBAR / HEADER
+    ============================================= */
+    .admin-topbar {
+      background: var(--surface-card);
+      border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-subtle);
+      border-top: none;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .topbar-brand h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .topbar-brand p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--liyog-green), var(--liyog-deep-green));
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: var(--shadow-green);
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      background: #fff;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    /* =============================================
+       TAB NAVIGATION
+    ============================================= */
+    .tabs-container {
+      background: var(--surface-card);
+      border-radius: var(--radius-xl);
+      padding: 6px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 28px;
+    }
+    .tabs-container::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: var(--radius-lg);
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 14px;
+      font-family: var(--font-body);
+      transition: all 0.25s ease;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .tab-btn:hover:not(.active) {
+      background: var(--surface-soft);
+      color: var(--text-primary);
+    }
+    .tab-btn.active {
+      background: var(--liyog-black);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(17,17,17,0.25);
+    }
+    /* Accent line on active tab */
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 6px; left: 50%;
+      transform: translateX(-50%);
+      width: 20px; height: 2px;
+      background: var(--liyog-green);
+      border-radius: 2px;
+    }
+
+    .admin-section { display: none; }
+    .admin-section.active { display: block; animation: fadeUp 0.35s ease-out; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =============================================
+       CARD
+    ============================================= */
+    .card {
+      background: var(--surface-card);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.25s;
+    }
+    .card:hover { box-shadow: var(--shadow-md); }
+
+    /* =============================================
+       FORM ELEMENTS
+    ============================================= */
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .input-premium {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-subtle);
+      background: var(--surface-soft);
+      font-size: 14px;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-premium::placeholder { color: var(--text-muted); }
+    .input-premium:focus {
+      background: var(--surface-card);
+      border-color: var(--liyog-green);
+      box-shadow: 0 0 0 3px rgba(40,164,40,0.12);
+    }
+    .input-premium:hover:not(:focus) {
+      border-color: #cbd5e1;
+    }
+    select.input-premium { cursor: pointer; }
+
+    /* =============================================
+       BUTTONS
+    ============================================= */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--liyog-green), var(--liyog-green-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-family: var(--font-body);
+      font-size: 15px;
       cursor: pointer;
       transition: all 0.25s ease;
-      backdrop-filter: blur(4px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: 0.01em;
+      box-shadow: 0 4px 14px rgba(40,164,40,0.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(40,164,40,0.4);
+      background: linear-gradient(135deg, var(--liyog-green-light), var(--liyog-green));
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled {
+      background: #cbd5e1;
+      box-shadow: none;
+      cursor: not-allowed;
+      color: #94a3b8;
+    }
+
+    .btn-ghost {
+      background: var(--surface-soft);
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 18px;
+      font-weight: 600;
+      font-size: 14px;
+      font-family: var(--font-body);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-ghost:hover {
+      background: #e2e8f0;
+      color: var(--text-primary);
+    }
+
+    /* =============================================
+       SECTION HEADER
+    ============================================= */
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* =============================================
+       UPLOAD FORM GRID
+    ============================================= */
+    .upload-grid {
+      display: grid;
+      gap: 28px;
+    }
+    @media (min-width: 1024px) {
+      .upload-grid { grid-template-columns: 1fr 420px; }
+    }
+
+    .form-fields { display: flex; flex-direction: column; gap: 20px; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 600px) {
+      .field-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* =============================================
+       FIELDSET GROUP (visual separator)
+    ============================================= */
+    .field-group {
+      background: var(--surface-soft);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* =============================================
+       DROP ZONE
+    ============================================= */
+    .drop-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-lg);
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: var(--surface-soft);
+      position: relative;
+    }
+    .drop-zone:hover {
+      border-color: var(--liyog-green);
+      background: rgba(40,164,40,0.03);
+    }
+    .drop-zone.dragover {
+      border-color: var(--liyog-green);
+      background: rgba(40,164,40,0.06);
+      transform: scale(1.01);
+      box-shadow: 0 0 0 4px rgba(40,164,40,0.1);
+    }
+    .drop-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, rgba(40,164,40,0.12), rgba(24,119,242,0.08));
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+      border: 1px solid rgba(40,164,40,0.2);
+    }
+    .drop-icon svg { color: var(--liyog-green); }
+    .drop-title { font-weight: 700; font-size: 15px; color: var(--text-primary); }
+    .drop-sub   { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+    .hidden-file { display: none; }
+
+    /* =============================================
+       IMAGE PREVIEWS
+    ============================================= */
+    #preview {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 10px !important;
+      width: 100% !important;
+      margin-top: 16px !important;
+    }
+    @media (min-width: 600px) {
+      #preview { grid-template-columns: repeat(4, 1fr) !important; gap: 14px !important; }
+    }
+
+    .preview-item {
+      position: relative;
+      cursor: grab;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      background: var(--surface-soft);
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--border-subtle);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .preview-item:hover { transform: scale(1.03); box-shadow: var(--shadow-md); }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+    .preview-item .remove-btn {
+      position: absolute; top: 6px; right: 6px;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: rgba(15,23,42,0.8);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: bold;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
       z-index: 5;
+      transition: all 0.2s;
+      border: 1.5px solid rgba(255,255,255,0.2);
     }
-
     .preview-item .remove-btn:hover {
-      background: rgba(255,59,48,0.95);
-      transform: scale(1.1);
+      background: var(--liyog-red);
+      transform: scale(1.15);
     }
-
     .sortable-ghost {
-      opacity: 0.35;
-      transform: scale(0.95);
+      opacity: 0.3;
+      transform: scale(0.93);
+      border: 2px dashed var(--liyog-blue) !important;
     }
 
-    /* PROGRESS BAR */
+    /* =============================================
+       PROGRESS BAR
+    ============================================= */
     .progress-container {
       display: none;
-      background: #f1f5f9;
-      border-radius: 999px;
-      height: 8px;
+      width: 100%;
+      height: 5px;
+      background: #e2e8f0;
+      border-radius: 50px;
       overflow: hidden;
       margin-top: 10px;
     }
     .progress-bar {
       height: 100%;
-      background: var(--color-liyog-green);
       width: 0%;
+      background: linear-gradient(90deg, var(--liyog-green), var(--liyog-green-light));
+      border-radius: 50px;
       transition: width 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 1.5s infinite;
     }
 
-    /* MODAL */
-    .modal-overlay {
+    /* =============================================
+       VIDEO BANNER
+    ============================================= */
+    .current-video-banner {
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border: 1.5px solid rgba(24,119,242,0.2);
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .video-banner-info { display: flex; align-items: center; gap: 10px; }
+    .video-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--liyog-blue), #0ea5e9);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(24,119,242,0.3);
+      flex-shrink: 0;
+    }
+    .video-banner-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+    .video-banner-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .video-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .video-play-btn {
+      font-size: 12px; font-weight: 700;
+      color: var(--liyog-blue);
+      background: rgba(24,119,242,0.1);
+      padding: 6px 14px; border-radius: 8px;
+      border: 1px solid rgba(24,119,242,0.2);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .video-play-btn:hover { background: var(--liyog-blue); color: #fff; }
+    .video-remove-btn {
+      font-size: 12px; font-weight: 700;
+      color: var(--liyog-red);
+      background: rgba(255,59,48,0.08);
+      padding: 6px 14px; border-radius: 8px;
+      border: 1px solid rgba(255,59,48,0.15);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .video-remove-btn:hover { background: var(--liyog-red); color: #fff; }
+
+    /* =============================================
+       LIVE PREVIEW CARD
+    ============================================= */
+    .preview-card {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1.5px solid var(--border-subtle);
+      background: #fff;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s;
+    }
+    .preview-card-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      background: var(--surface-soft);
+    }
+    .preview-card-body { padding: 18px; }
+    .preview-card-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .preview-card-price {
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: var(--liyog-green);
+      white-space: nowrap;
+    }
+    .preview-card-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .preview-label {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(40,164,40,0.1);
+      color: var(--liyog-green-dark);
+      padding: 4px 12px;
+      border-radius: 50px;
+      border: 1px solid rgba(40,164,40,0.2);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* =============================================
+       CANCEL EDIT BUTTON
+    ============================================= */
+    .cancel-edit-btn {
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--surface-soft);
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border-subtle);
+      padding: 7px 16px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cancel-edit-btn:hover {
+      background: var(--liyog-red);
+      color: #fff;
+      border-color: var(--liyog-red);
+    }
+
+    /* =============================================
+       MANAGE PRODUCTS SECTION
+    ============================================= */
+    .manage-header {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 640px) {
+      .manage-header { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+    }
+    .manage-filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .manage-filters .input-premium {
+      min-width: 0;
+      flex: 1;
+    }
+    @media (min-width: 640px) {
+      #searchProducts { width: 220px; flex: none; }
+      #filterVisibility { width: 150px; flex: none; }
+    }
+
+    /* =============================================
+       TABLE (Desktop)
+    ============================================= */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-lg);
+      border: 1.5px solid var(--border-subtle);
+      background: white;
+    }
+    .product-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+    .product-table thead tr {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    }
+    .product-table th {
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-bottom: 1.5px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    .product-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    .product-table tbody tr:last-child td { border-bottom: none; }
+    .product-table tbody tr {
+      transition: background 0.15s;
+    }
+    .product-table tbody tr:hover { background: #fafbfc; }
+
+    .product-thumb {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      object-fit: cover;
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--border-subtle);
+    }
+
+    .drag-handle {
+      color: #cbd5e1;
+      cursor: grab;
+      font-size: 18px;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+    .drag-handle:hover { color: var(--liyog-blue); }
+
+    /* product name / price / cat in table */
+    .prod-name  { font-weight: 700; color: var(--text-primary); font-size: 14px; }
+    .prod-price { font-weight: 700; color: var(--liyog-green); font-size: 13px; margin-top: 2px; }
+    .prod-meta  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* toggle / action buttons */
+    .toggle-btn {
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-body);
+      background: #f1f5f9;
+      color: var(--text-secondary);
+    }
+    .toggle-btn:hover { background: #e2e8f0; }
+    .toggle-btn.active  { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .toggle-btn.featured{ background: #fef9c3; color: #92400e; border: 1px solid #fde68a; }
+
+    .action-btn {
+      border: none;
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-body);
+    }
+    .edit-btn   { background: #eff6ff; color: var(--liyog-blue); }
+    .edit-btn:hover   { background: var(--liyog-blue); color: #fff; }
+    .delete-btn { background: #fef2f2; color: var(--liyog-red); }
+    .delete-btn:hover { background: var(--liyog-red); color: #fff; }
+
+    /* =============================================
+       MOBILE PRODUCT CARD
+    ============================================= */
+    .mobile-product-card {
+      background: var(--surface-card);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      border: 1.5px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: box-shadow 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .mobile-product-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .mobile-card-top { display: flex; gap: 14px; position: relative; }
+    .mobile-card-drag {
+      position: absolute;
+      top: 0; right: 0;
+      color: #cbd5e1;
+      font-size: 18px;
+      cursor: grab;
+      padding: 4px;
+    }
+    .mobile-card-img {
+      width: 72px; height: 72px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1.5px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+    .mobile-card-info { flex: 1; padding-right: 24px; }
+    .mobile-card-name  { font-weight: 700; color: var(--text-primary); font-size: 15px; line-height: 1.3; }
+    .mobile-card-price { font-weight: 800; color: var(--liyog-green); font-size: 15px; margin-top: 4px; }
+    .mobile-card-cat   { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .mobile-card-stock { font-size: 12px; color: var(--text-muted); }
+
+    .mobile-card-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .mobile-card-toggles { display: flex; gap: 8px; }
+    .mobile-card-actions { display: flex; gap: 8px; }
+
+    /* =============================================
+       PAGINATION
+    ============================================= */
+    .pagination-wrap {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .page-btn {
+      padding: 7px 16px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border-subtle);
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .page-btn:hover:not(:disabled) { background: var(--liyog-green); color: #fff; border-color: var(--liyog-green); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .page-indicator {
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      background: var(--surface-soft);
+      border-radius: 10px;
+      border: 1.5px solid var(--border-subtle);
+    }
+
+    /* =============================================
+       SKELETON LOADER
+    ============================================= */
+    .skeleton {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 10px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* =============================================
+       TOAST ALERTS
+    ============================================= */
+    .toast {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(5px);
+      top: 20px; right: 16px;
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      color: white;
+      z-index: 99998;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+      transform: translateY(-16px) scale(0.96);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      max-width: calc(100vw - 32px);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toast::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.7);
+      flex-shrink: 0;
+    }
+    .toast.show { transform: translateY(0) scale(1); opacity: 1; }
+    .toast.success { background: linear-gradient(135deg, var(--liyog-green), var(--liyog-green-dark)); }
+    .toast.error   { background: linear-gradient(135deg, var(--liyog-red), var(--liyog-red-dark)); }
+    .toast.info    { background: linear-gradient(135deg, var(--liyog-blue), #1565c0); }
+
+    /* =============================================
+       SPINNER
+    ============================================= */
+    .spinner {
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      width: 18px; height: 18px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* =============================================
+       ERROR INPUT STATE
+    ============================================= */
+    .input-error {
+      border-color: var(--liyog-red) !important;
+      box-shadow: 0 0 0 3px rgba(255,59,48,0.12) !important;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25%       { transform: translateX(-5px); }
+      75%       { transform: translateX(5px); }
+    }
+    .animate-shake { animation: shake 0.3s ease-in-out; }
+
+    /* =============================================
+       MODAL
+    ============================================= */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
       z-index: 10000;
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 16px;
       opacity: 0;
       transition: opacity 0.3s ease;
     }
-    .modal-overlay.active {
-      display: flex;
-      opacity: 1;
-    }
+    .modal-overlay.active { display: flex; opacity: 1; }
     .modal-content {
       background: #111;
       width: 100%;
-      max-width: 800px;
-      border-radius: 1.5rem;
+      max-width: 820px;
+      border-radius: var(--radius-xl);
       position: relative;
       overflow: hidden;
       aspect-ratio: 16/9;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     }
     .modal-close {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 42px;
-      height: 42px;
+      position: absolute; top: 14px; right: 14px;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.7);
+      color: white; border-radius: 50%;
+      font-size: 22px; cursor: pointer; z-index: 10002;
+      transition: all 0.2s;
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+    }
+    .modal-close:hover { background: var(--liyog-red); transform: scale(1.08); }
+
+    /* =============================================
+       MANAGE PRODUCTS WRAPPER CARD
+    ============================================= */
+    .manage-card {
+      background: var(--surface-soft);
+      border-radius: var(--radius-xl);
+      border: 1.5px solid var(--border-subtle);
+      padding: 24px;
+      margin-top: 28px;
+    }
+
+    /* =============================================
+       STATUS TEXT
+    ============================================= */
+    #statusText {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 10px;
+    }
+
+    /* =============================================
+       UTILITY HELPERS
+    ============================================= */
+    .hidden { display: none !important; }
+    .flex   { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2  { gap: 8px; }
+    .gap-3  { gap: 12px; }
+    .w-full { width: 100%; }
+    .mt-2   { margin-top: 8px; }
+    .mt-3   { margin-top: 12px; }
+    .mt-4   { margin-top: 16px; }
+
+    /* =============================================
+       PLACEHOLDER TAB SECTIONS
+    ============================================= */
+    .tab-placeholder {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.65);
-      color: white;
-      border-radius: 50%;
-      font-size: 24px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 10002;
-      transition: all 0.25s ease;
+      min-height: 280px;
+      text-align: center;
+      gap: 12px;
     }
-    .modal-close:hover {
-      background: rgba(255,59,48,0.9);
-      transform: scale(1.05);
+    .tab-placeholder-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, rgba(40,164,40,0.1), rgba(24,119,242,0.08));
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      border: 1.5px solid rgba(40,164,40,0.15);
+      margin-bottom: 4px;
     }
   </style>
 </head>
 <body>
 
-<div class="min-h-screen p-4 md:p-8">
-  <div class="max-w-6xl mx-auto">
+<!-- ================================================
+     OFFLINE / NO-NETWORK BANNER
+================================================= -->
+<div id="offlineBanner">
+  <span class="banner-icon">📡</span>
+  <span>
+    You're offline or your connection is weak.
+    <strong>Please turn on your mobile data or check your connection</strong>, then refresh.
+  </span>
+</div>
 
-    <div class="glass rounded-3xl px-6 py-5 mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-liyog-black">Product Upload</h1>
-        <p class="text-sm text-slate-500">Next-Gen Premium Listing Portal</p>
-      </div>
-      <div class="bg-liyog-green text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-        Admin Live
-      </div>
+<!-- ================================================
+     TOPBAR
+================================================= -->
+<div style="padding-top: 24px;" class="admin-wrapper">
+
+  <div class="admin-topbar">
+    <div class="topbar-brand">
+      <h1>Admin Dashboard</h1>
+      <p>Next-Gen Premium Listing Portal</p>
     </div>
+    <div class="live-badge">
+      <span class="live-dot"></span>
+      Admin Live Portal
+    </div>
+  </div>
 
-    <div class="grid lg:grid-cols-12 gap-8">
+  <!-- ================================================
+       TAB NAVIGATION
+  ================================================= -->
+  <div class="tabs-container admin-tabs">
+    <button class="tab-btn active" data-tab="uploadTab">📦 Upload &amp; Manage</button>
+    <button class="tab-btn" data-tab="storiesTab">📸 Stories</button>
+    <button class="tab-btn" data-tab="categoriesTab">🗂 Categories</button>
+    <button class="tab-btn" data-tab="settingsTab">⚙️ Settings</button>
+  </div>
 
-      <div class="lg:col-span-7 card-premium p-6 md:p-8 animate-fade-up">
-        <h2 class="text-xl font-semibold mb-6 text-liyog-black">Product Details</h2>
+  <!-- ================================================
+       UPLOAD & MANAGE TAB
+  ================================================= -->
+  <div id="uploadTab" class="admin-section active">
 
-        <div class="space-y-5">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label class="text-sm font-semibold text-slate-600 mb-1 block">Product Name *</label>
-              <input id="name" type="text" class="input-premium" placeholder="e.g. Premium Sneaker">
+    <div class="upload-grid">
+
+      <!-- LEFT: UPLOAD FORM -->
+      <div class="card" style="padding: 28px;">
+
+        <div class="flex items-center justify-between" style="margin-bottom: 24px;">
+          <div>
+            <h2 id="formTitle" class="section-title">Upload New Product</h2>
+            <p class="section-subtitle">Fill in the details below</p>
+          </div>
+          <button id="cancelEditBtn" onclick="resetForm()" class="cancel-edit-btn hidden">✕ Cancel Edit</button>
+        </div>
+
+        <div class="form-fields">
+
+          <!-- Product Name + Price -->
+          <div class="field-group">
+            <p style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Basic Info</p>
+            <div class="field-row">
+              <div>
+                <label class="form-label">Product Name *</label>
+                <input id="name" type="text" class="input-premium" placeholder="e.g. Premium Sneaker">
+              </div>
+              <div>
+                <label class="form-label">Price *</label>
+                <input id="price" type="number" inputmode="numeric" class="input-premium" placeholder="0">
+              </div>
             </div>
-            <div>
-              <label class="text-sm font-semibold text-slate-600 mb-1 block">Price </label>
-              <input id="price" type="number" inputmode="numeric" class="input-premium" placeholder="0">
+            <div class="field-row">
+              <div>
+                <label class="form-label">Category</label>
+                <select id="category" class="input-premium"></select>
+              </div>
+              <div>
+                <label class="form-label">Stock Quantity</label>
+                <input id="stock" type="number" inputmode="numeric" class="input-premium" placeholder="0" value="1">
+              </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Tags + WhatsApp -->
+          <div class="field-group">
+            <p style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Contact &amp; Tags</p>
             <div>
-              <label class="text-sm font-semibold text-slate-600 mb-1 block">Category</label>
-              <select id="category" class="input-premium"></select>
-            </div>
-            <div>
-              <label class="text-sm font-semibold text-slate-600 mb-1 block">Tags</label>
+              <label class="form-label">Tags</label>
               <input id="tags" type="text" class="input-premium" placeholder="e.g. shoes, fashion (comma separated)">
             </div>
-          </div>
-
-          <div>
-            <label class="text-sm font-semibold text-slate-600 mb-1 block">WhatsApp Number *</label>
-            <input id="whatsapp" type="tel" class="input-premium" placeholder="e.g. 2348000000000">
-            <p class="text-xs text-slate-400 mt-1">Include country code, no spaces or +</p>
-          </div>
-
-          <div>
-            <label class="text-sm font-semibold text-slate-600 mb-1 block">YouTube URL (Optional)</label>
-            <div class="flex gap-2">
-              <input id="youtube" type="url" class="input-premium flex-1" placeholder="https://youtube.com/...">
-              <button onclick="previewYouTube()" class="bg-slate-100 text-slate-600 px-4 rounded-2xl font-semibold hover:bg-slate-200 transition">Preview</button>
+            <div>
+              <label class="form-label">WhatsApp Number *</label>
+              <input id="whatsapp" type="tel" class="input-premium" placeholder="e.g. 2348000000000">
+              <p style="font-size:11px;color:var(--text-muted);margin-top:6px;">Include country code — no spaces or +</p>
             </div>
           </div>
 
-          <div>
-            <label class="text-sm font-semibold text-slate-600 mb-1 block">Description</label>
-            <textarea id="description" class="input-premium min-h-[120px]" placeholder="Detailed product description..."></textarea>
-          </div>
-        </div>
-
-        <div class="mt-8">
-          <div class="flex items-center justify-between mb-2">
-            <label class="font-semibold text-sm text-slate-600 block">Upload Images (max 10)</label>
-            <span class="text-xs text-slate-400">Drag to reorder</span>
-          </div>
-          
-          <div id="dropZone" class="drop-zone border-2 border-dashed border-slate-300 rounded-3xl p-10 text-center cursor-pointer transition-all hover:border-liyog-green hover:bg-slate-50">
-            <div class="bg-slate-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          <!-- YouTube + Description -->
+          <div class="field-group">
+            <p style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Media &amp; Description</p>
+            <div>
+              <label class="form-label">YouTube URL <span style="color:var(--text-muted);font-weight:500;">(Optional)</span></label>
+              <div style="display:flex;gap:10px;align-items:stretch;">
+                <input id="youtube" type="url" class="input-premium" style="flex:1;min-width:0;" placeholder="https://youtube.com/...">
+                <button onclick="previewYouTube()" class="btn-ghost" style="flex-shrink:0;padding:10px 18px;border-radius:var(--radius-md);">▶ Preview</button>
+              </div>
             </div>
-            <p class="text-slate-600 font-medium">Tap or drag images here</p>
-            <p class="text-xs text-slate-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
-            <input id="images" type="file" multiple accept="image/*" class="hidden-file">
+            <div>
+              <label class="form-label">Description</label>
+              <textarea id="description" class="input-premium" style="min-height:110px;resize:vertical;" placeholder="Detailed product description..."></textarea>
+            </div>
           </div>
-          
-          <div id="preview"></div>
-          
-        </div>
 
-        <div class="mt-8">
-          <label class="font-semibold text-sm text-slate-600 mb-2 block">Optional Video Upload</label>
-          <div class="flex gap-2 items-center">
-            <input id="video" type="file" accept="video/*" class="input-premium flex-1">
-            <button id="previewVideoBtn" onclick="previewLocalVideo()" class="bg-slate-100 text-slate-600 px-4 py-3 rounded-2xl font-semibold hover:bg-slate-200 transition hidden">Play</button>
+          <!-- IMAGE UPLOAD -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <label class="form-label" style="margin-bottom:0;">Upload Images <span style="color:var(--text-muted);font-weight:500;">(max 10)</span></label>
+              <span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--surface-soft);padding:4px 10px;border-radius:6px;border:1px solid var(--border-subtle);">Drag to reorder</span>
+            </div>
+
+            <div id="dropZone" class="drop-zone">
+              <div class="drop-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+              </div>
+              <p class="drop-title">Tap or drag images here</p>
+              <p class="drop-sub">PNG, JPG, WEBP — up to 5MB each</p>
+              <input id="images" type="file" multiple accept="image/*" class="hidden-file">
+            </div>
+
+            <div id="preview"></div>
           </div>
-        </div>
 
-        <div class="mt-10 border-t border-slate-100 pt-6">
-          <button id="submitBtn" onclick="submitProduct()" class="btn-primary w-full flex items-center justify-center gap-2 text-lg py-4">
+          <!-- VIDEO UPLOAD -->
+          <div>
+            <label class="form-label">Product Video <span style="color:var(--text-muted);font-weight:500;">(Optional)</span></label>
+
+            <div id="existingVideoBanner" class="current-video-banner hidden">
+              <div class="video-banner-info">
+                <div class="video-icon">🎥</div>
+                <div>
+                  <p class="video-banner-title">Video Attached</p>
+                  <p class="video-banner-sub">A video is linked to this product</p>
+                </div>
+              </div>
+              <div class="video-actions">
+                <button type="button" onclick="previewExistingVideo()" class="video-play-btn">▶ Play</button>
+                <button type="button" onclick="removeExistingVideo()" class="video-remove-btn">✕ Remove</button>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;">
+              <input id="video" type="file" accept="video/*" class="input-premium" style="flex:1;min-width:0;">
+              <button id="previewVideoBtn" onclick="previewLocalVideo()" class="btn-ghost hidden" style="flex-shrink:0;border-radius:var(--radius-md);padding:10px 18px;">▶ Play</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:6px;">Uploading a new video overrides the existing one.</p>
+          </div>
+
+        </div><!-- /form-fields -->
+
+        <!-- SUBMIT -->
+        <div style="margin-top:28px;padding-top:24px;border-top:1.5px solid var(--border-subtle);">
+          <button id="submitBtn" onclick="submitProduct()" class="btn-primary w-full" style="padding:16px;font-size:16px;">
             <span>Upload Product</span>
           </button>
-          
-          <p id="statusText" class="text-center text-sm text-slate-500 mt-3 hidden font-medium"></p>
-          <div id="progressContainer" class="progress-container">
-            <div id="progressBar" class="progress-bar"></div>
+          <p id="statusText" class="hidden"></p>
+          <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
           </div>
         </div>
 
-      </div>
+      </div><!-- /left card -->
 
-      <div class="lg:col-span-5 relative">
-        <div class="sticky top-8 card-premium p-6 animate-fade-up">
-          <div class="flex items-center justify-between mb-5">
-            <h2 class="text-xl font-semibold text-liyog-black">Live Preview</h2>
-            <span class="bg-liyog-green/10 text-liyog-green text-xs font-bold px-3 py-1 rounded-full">Customer View</span>
+      <!-- RIGHT: LIVE PREVIEW (sticky on desktop) -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card" style="padding:24px;position:sticky;top:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <h2 class="section-title">Live Preview</h2>
+            <span class="preview-label">Customer View</span>
           </div>
 
-          <div id="liveCard" class="rounded-3xl overflow-hidden border border-slate-100 bg-white shadow-sm transition-all duration-300">
-            <img id="liveImage" src="https://placehold.co/600x400?text=Image+Preview" class="w-full aspect-[4/3] object-cover bg-slate-50">
-            <div class="p-5">
-              <div class="flex justify-between items-start gap-3">
-                <h3 id="liveName" class="font-bold text-lg text-liyog-black leading-tight break-words flex-1">Product Name</h3>
-                <p id="livePrice" class="text-liyog-green font-bold text-lg whitespace-nowrap">0</p>
+          <div id="liveCard" class="preview-card">
+            <img id="liveImage" src="https://placehold.co/600x400?text=Image+Preview" class="preview-card-img" alt="preview">
+            <div class="preview-card-body">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">
+                <h3 id="liveName" class="preview-card-name" style="flex:1;">Product Name</h3>
+                <p id="livePrice" class="preview-card-price">₦0</p>
               </div>
-              <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <p id="liveDesc" class="text-sm text-slate-600 leading-relaxed line-clamp-4 break-words text-center">Description preview will appear here...</p>
+              <div style="background:var(--surface-soft);padding:12px 14px;border-radius:12px;border:1px solid var(--border-subtle);">
+                <p id="liveDesc" class="preview-card-desc">Description preview will appear here...</p>
               </div>
             </div>
           </div>
+
+          <!-- Mini stats row -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;">
+            <div style="background:rgba(40,164,40,0.06);border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(40,164,40,0.12);">
+              <p style="font-size:18px;font-weight:800;color:var(--liyog-green);" id="previewImgCount">0</p>
+              <p style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:2px;">Images</p>
+            </div>
+            <div style="background:rgba(24,119,242,0.06);border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(24,119,242,0.12);">
+              <p style="font-size:18px;font-weight:800;color:var(--liyog-blue);" id="previewStockCount">1</p>
+              <p style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:2px;">In Stock</p>
+            </div>
+            <div style="background:rgba(255,122,0,0.06);border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(255,122,0,0.12);">
+              <p style="font-size:18px;font-weight:800;color:var(--liyog-orange);" id="previewVideoStatus">—</p>
+              <p style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:2px;">Video</p>
+            </div>
+          </div>
+
         </div>
       </div>
 
+    </div><!-- /upload-grid -->
+
+    <!-- =============================================
+         MANAGE PRODUCTS
+    ============================================= -->
+    <div class="manage-card">
+
+      <div class="manage-header">
+        <div>
+          <h3 class="section-title">Manage Products</h3>
+          <p class="section-subtitle">Edit, Reorder &amp; Delete your listings</p>
+        </div>
+        <div class="manage-filters">
+          <input id="searchProducts" type="text" class="input-premium" placeholder="🔍 Search products..." style="min-width:160px;">
+          <select id="filterVisibility" class="input-premium" style="min-width:130px;">
+            <option value="">All Products</option>
+            <option value="visible">Visible Only</option>
+            <option value="hidden">Hidden Only</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="hidden md:block table-wrap" style="display:none;">
+        <table class="product-table w-full" id="desktopTable">
+          <thead>
+            <tr>
+              <th width="40">Sort</th>
+              <th width="70">Image</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="productsTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div id="productsMobileContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+      <div id="pagination" class="pagination-wrap"></div>
+
+    </div><!-- /manage-card -->
+
+    <!-- MEDIA MODAL -->
+    <div id="mediaModal" class="modal-overlay">
+      <div style="position:relative;width:100%;max-width:820px;margin:auto;">
+        <div class="modal-close" onclick="closeModal()">&times;</div>
+        <div id="modalContent" class="modal-content"></div>
+      </div>
+    </div>
+
+  </div><!-- /uploadTab -->
+
+  <!-- ================================================
+       STORIES TAB
+  ================================================= -->
+  <div id="storiesTab" class="admin-section">
+    <div class="card" style="padding:28px;">
+      <h2 class="section-title" style="margin-bottom:20px;">📸 Promo Stories</h2>
+      <div class="tab-placeholder">
+        <div class="tab-placeholder-icon">📸</div>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;">Stories Coming Soon</h3>
+        <p style="color:var(--text-muted);font-size:14px;max-width:300px;">Your promo stories manager will appear here.</p>
+      </div>
+      <div id="storiesList"></div>
     </div>
   </div>
-</div>
 
-<div id="mediaModal" class="modal-overlay">
-  <div class="relative w-full max-w-4xl mx-auto">
-    <div class="modal-close" onclick="closeModal()">&times;</div>
-    <div id="modalContent" class="modal-content shadow-2xl">
+  <!-- ================================================
+       CATEGORIES TAB
+  ================================================= -->
+  <div id="categoriesTab" class="admin-section">
+    <div class="card" style="padding:28px;">
+      <h2 class="section-title" style="margin-bottom:20px;">🗂 Categories</h2>
+      <div class="tab-placeholder">
+        <div class="tab-placeholder-icon">🗂</div>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;">Categories Manager</h3>
+        <p style="color:var(--text-muted);font-size:14px;max-width:300px;">Create and organise your product categories here.</p>
       </div>
+      <div id="categoriesList"></div>
+    </div>
   </div>
-</div>
 
+  <!-- ================================================
+       SETTINGS TAB
+  ================================================= -->
+  <div id="settingsTab" class="admin-section">
+    <div class="card" style="padding:28px;">
+      <h2 class="section-title" style="margin-bottom:20px;">⚙️ Store Settings</h2>
+      <div class="tab-placeholder">
+        <div class="tab-placeholder-icon">⚙️</div>
+        <h3 style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;">Settings Panel</h3>
+        <p style="color:var(--text-muted);font-size:14px;max-width:300px;">Store configuration and profile options will live here.</p>
+      </div>
+      <div id="profileSettings"></div>
+    </div>
+  </div>
+
+</div><!-- /admin-wrapper -->
+
+<!-- ================================================
+     RESPONSIVE TABLE SHOW/HIDE LOGIC
+================================================= -->
 <script>
+  // Show table on md+ screens, cards on mobile
+  function applyTableLayout() {
+    const dt = document.getElementById('desktopTable')?.closest('.table-wrap');
+    const mc = document.getElementById('productsMobileContainer');
+    if (!dt || !mc) return;
+    if (window.innerWidth >= 768) {
+      dt.style.display = 'block';
+      mc.style.display = 'none';
+    } else {
+      dt.style.display = 'none';
+      mc.style.display = 'flex';
+    }
+  }
+  window.addEventListener('resize', applyTableLayout);
+  applyTableLayout();
+</script>
+
+<!-- ================================================
+     MAIN APPLICATION SCRIPT
+================================================= -->
+<script>
+const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
+
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let els = {};
+
 document.addEventListener("DOMContentLoaded", async () => {
-  // SUPABASE & RENDER CONFIGURATION (Unchanged)
-  const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
-  const renderUrl = "https://video-compressor-ilg5.onrender.com";
 
-  const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-  // DOM ELEMENTS
-  const els = {
+  els = {
+    formTitle: document.getElementById("formTitle"),
+    cancelEditBtn: document.getElementById("cancelEditBtn"),
     name: document.getElementById("name"),
     price: document.getElementById("price"),
+    stock: document.getElementById("stock"),
     category: document.getElementById("category"),
     tags: document.getElementById("tags"),
     whatsapp: document.getElementById("whatsapp"),
@@ -369,6 +1379,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     description: document.getElementById("description"),
     images: document.getElementById("images"),
     video: document.getElementById("video"),
+    existingVideoBanner: document.getElementById("existingVideoBanner"),
     dropZone: document.getElementById("dropZone"),
     preview: document.getElementById("preview"),
     liveImage: document.getElementById("liveImage"),
@@ -381,36 +1392,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     progressBar: document.getElementById("progressBar"),
     previewVideoBtn: document.getElementById("previewVideoBtn"),
     mediaModal: document.getElementById("mediaModal"),
-    modalContent: document.getElementById("modalContent")
+    modalContent: document.getElementById("modalContent"),
+    productsTableBody: document.getElementById("productsTableBody"),
+    productsMobileContainer: document.getElementById("productsMobileContainer")
   };
 
   // STATE
-  let selectedImages = []; // Array of objects: { id, file, url }
+  let selectedImages = [];
   let uploading = false;
-  let videoTimerInterval = null;
+  let editingProductId = null;
+  let currentEditingProduct = null;
+  let filesToDeleteFromR2 = [];
 
-  // INITIALIZE DRAG & DROP SORTING
+  let currentSearch = "";
+  let currentVisibilityFilter = "";
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
+
+  // SORTABLE — image previews
   Sortable.create(els.preview, {
     animation: 150,
     ghostClass: 'sortable-ghost',
     onEnd: function (evt) {
-      // Reorder array based on DOM change
       const item = selectedImages.splice(evt.oldIndex, 1)[0];
       selectedImages.splice(evt.newIndex, 0, item);
-      updateLive(); // First image might have changed
+      updateLive();
     }
   });
 
-  // TOAST NOTIFICATIONS
+  // SORTABLE — desktop table
+  Sortable.create(els.productsTableBody, {
+    animation: 150,
+    handle: '.drag-handle',
+    onEnd: async () => {
+      const ids = [...els.productsTableBody.children].map(x => x.dataset.id);
+      await supabaseClient.rpc("reorder_products", { p_ids: ids });
+      toast("Desktop order updated", "success");
+      loadProducts();
+    }
+  });
+
+  // SORTABLE — mobile cards
+  Sortable.create(els.productsMobileContainer, {
+    animation: 150,
+    handle: '.drag-handle',
+    onEnd: async () => {
+      const ids = [...els.productsMobileContainer.children].map(x => x.dataset.id);
+      await supabaseClient.rpc("reorder_products", { p_ids: ids });
+      toast("Mobile order updated", "success");
+      loadProducts();
+    }
+  });
+
+  // TOAST
   function toast(msg, type = "success", duration = 4000) {
     const div = document.createElement("div");
     div.className = `toast ${type}`;
     div.textContent = msg;
     document.body.appendChild(div);
-    
-    // Trigger animation
     requestAnimationFrame(() => div.classList.add("show"));
-    
     setTimeout(() => {
       div.classList.remove("show");
       setTimeout(() => div.remove(), 300);
@@ -420,470 +1460,540 @@ document.addEventListener("DOMContentLoaded", async () => {
   // LIVE PREVIEW UPDATER
   function updateLive() {
     els.liveName.textContent = els.name.value.trim() || "Product Name";
-    
-    // Format price with commas
     const rawPrice = els.price.value;
-    els.livePrice.textContent = rawPrice
-  ? `${Number(rawPrice).toLocaleString()}`
-  : "0";    
+    els.livePrice.textContent = rawPrice ? `₦${Number(rawPrice).toLocaleString()}` : "₦0";
     els.liveDesc.textContent = els.description.value.trim() || "Description preview will appear here...";
-    
-    // Update live image based on the first item in selectedImages
     if (selectedImages.length > 0) {
       els.liveImage.src = selectedImages[0].url;
     } else {
       els.liveImage.src = "https://placehold.co/600x400?text=Image+Preview";
     }
+    // update mini stats
+    const imgCount = document.getElementById("previewImgCount");
+    const stockCount = document.getElementById("previewStockCount");
+    const videoStatus = document.getElementById("previewVideoStatus");
+    if (imgCount) imgCount.textContent = selectedImages.length;
+    if (stockCount) stockCount.textContent = els.stock.value || 1;
+    if (videoStatus) videoStatus.textContent = (els.video.files && els.video.files.length > 0) ? "✓" : (currentEditingProduct?.video_url ? "✓" : "—");
   }
 
-  // CATEGORIES
   async function loadCategories() {
     try {
-      els.category.innerHTML = `<option>Loading categories...</option>`;
+      els.category.innerHTML = `<option>Loading...</option>`;
       const { data, error } = await supabaseClient.from("categories").select("id,name").order("name");
       if (error) throw error;
-      
       els.category.innerHTML = `<option value="">Select a category</option>`;
       data.forEach(cat => {
         const option = document.createElement("option");
-        option.value = cat.id;
-        option.textContent = cat.name;
+        option.value = cat.id; option.textContent = cat.name;
         els.category.appendChild(option);
       });
-    } catch (err) {
-      console.error(err);
-      toast("Failed to load categories. Please refresh.", "error");
-    }
+    } catch (err) { toast("Failed to load categories.", "error"); }
   }
 
-  // IMAGE HANDLING & OPTIMIZATION
+  // IMAGE OPTIMISE
   async function optimizeImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const reader = new FileReader();
-
-    reader.onload = e => {
-      img.src = e.target.result;
-    };
-
-    reader.onerror = reject;
-
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-
-      const maxWidth = 1200;
-      const scale = Math.min(1, maxWidth / img.width);
-
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(
-        blob => {
-          if (!blob) return reject("Compression failed");
-
-          resolve(
-            new File(
-              [blob],
-              file.name.replace(/\.\w+$/, ".webp"),
-              { type: "image/webp" }
-            )
-          );
-        },
-        "image/webp",
-        0.70
-      );
-    };
-
-    img.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-
+    return new Promise((resolve, reject) => {
+      const img = new Image(); const reader = new FileReader();
+      reader.onload = e => { img.src = e.target.result; }; reader.onerror = reject;
+      img.onload = () => {
+        const canvas = document.createElement("canvas"); const ctx = canvas.getContext("2d");
+        const maxWidth = 1200; const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          if (!blob) return reject("Processing failed");
+          resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+        }, "image/webp", 0.70);
+      };
+      img.onerror = reject; reader.readAsDataURL(file);
+    });
+  }
 
   function renderPreviews() {
-  els.preview.innerHTML = "";
-
-  selectedImages.forEach((imageObj, index) => {
-    const div = document.createElement("div");
-    div.className = "preview-item animate-fade-up";
-    div.setAttribute("data-id", imageObj.id);
-
-    const img = document.createElement("img");
-    img.src = imageObj.url;
-
-    const btn = document.createElement("div");
-    btn.className = "remove-btn";
-    btn.innerHTML = "&times;";
-    btn.title = "Remove image";
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      removeImage(imageObj.id);
-    };
-
-    div.appendChild(img);
-    div.appendChild(btn);
-    els.preview.appendChild(div);
-  });
-
-  updateLive();
-}
+    els.preview.innerHTML = "";
+    selectedImages.forEach((imageObj) => {
+      const div = document.createElement("div");
+      div.className = "preview-item"; div.setAttribute("data-id", imageObj.id);
+      const img = document.createElement("img"); img.src = imageObj.url;
+      const btn = document.createElement("div"); btn.className = "remove-btn"; btn.innerHTML = "&times;";
+      btn.onclick = (e) => { e.stopPropagation(); removeImage(imageObj.id); };
+      div.appendChild(img); div.appendChild(btn); els.preview.appendChild(div);
+    });
+    updateLive();
+  }
 
   function removeImage(id) {
-    // Revoke URL to prevent memory leaks
     const imgToRemove = selectedImages.find(img => img.id === id);
-    if(imgToRemove) URL.revokeObjectURL(imgToRemove.url);
-    
+    if (imgToRemove) {
+      if (!imgToRemove.existing) URL.revokeObjectURL(imgToRemove.url);
+      else filesToDeleteFromR2.push(imgToRemove.url);
+    }
     selectedImages = selectedImages.filter(img => img.id !== id);
     renderPreviews();
   }
 
   async function handleFiles(fileList) {
     const files = Array.from(fileList).filter(file => file.type.startsWith("image/"));
-    
-    // Prevent exceeding 10 images
-    if (selectedImages.length + files.length > 10) {
-      toast("Maximum 10 images allowed.", "error");
-      return;
-    }
-
-    // UX Feedback for processing images locally
-    els.dropZone.style.opacity = "0.5";
-    
+    if (selectedImages.length + files.length > 10) return toast("Maximum 10 images allowed.", "error");
+    els.dropZone.style.opacity = "0.6";
     for (let file of files) {
-      const optimized = await optimizeImage(file);
-      const url = URL.createObjectURL(optimized);
-      selectedImages.push({
-        id: Math.random().toString(36).substr(2, 9),
-        file: optimized,
-        url: url
-      });
+      try {
+        const optimized = await optimizeImage(file);
+        selectedImages.push({ id: crypto.randomUUID(), file: optimized, url: URL.createObjectURL(optimized), existing: false });
+      } catch { toast(`Failed to process ${file.name}`, "error"); }
     }
-    
-    els.dropZone.style.opacity = "1";
-    renderPreviews();
-    // Reset file input to allow uploading the same file again if removed
-    els.images.value = "";
+    els.dropZone.style.opacity = "1"; renderPreviews(); els.images.value = "";
   }
 
-  // UPLOAD LOGIC
   async function fileToBase64(file) {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+      const reader = new FileReader(); reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject; reader.readAsDataURL(file);
     });
   }
 
-   async function uploadFile(file) {
+  async function uploadFile(file) {
     const fileBase64 = await fileToBase64(file);
-
-    try {
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseKey}`
-        },
-        body: JSON.stringify({
-          fileBase64,
-          fileName: file.name,
-          fileType: file.type,
-          folder: "products"
-        })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Upload failed");
-      }
-
-      return result.publicUrl;
-
-    } catch (error) {
-      // This specifically catches the browser CORS block and gives you a clear toast message
-      if (error.message.includes("Failed to fetch") || error.name === 'TypeError') {
-        throw new Error("CORS Blocked: Please deploy the updated Edge Function on Supabase to allow GitHub uploads.");
-      }
-      throw error;
-    }
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+      method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+      body: JSON.stringify({ fileBase64, fileName: file.name, fileType: file.type, folder: "products" })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Upload failed");
+    return result.publicUrl;
   }
-
 
   async function compressVideo(file) {
-    const formData = new FormData();
-    formData.append("video", file);
-    
-    try {
-      const response = await fetch(`${renderUrl}/compress-video`, {
-        method: "POST",
-        body: formData
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Video compression failed");
-      if (!result.publicUrl) throw new Error("Compressed video URL missing");
-      return result.publicUrl;
-    } catch (err) {
-      console.error("VIDEO COMPRESSION ERROR:", err);
-      updateStatus("Compression failed. Uploading original video...", true);
-      return await uploadFile(file);
+  updateStatus("Compressing video locally...", false);
+
+  try {
+    // Create a video element to decode the source file
+    const videoEl = document.createElement("video");
+    videoEl.src = URL.createObjectURL(file);
+    videoEl.muted = true;
+
+    await new Promise((resolve, reject) => {
+      videoEl.onloadedmetadata = resolve;
+      videoEl.onerror = reject;
+    });
+
+    // Set up an offscreen canvas at your target resolution
+    const MAX_DIM = 1280;
+    let { videoWidth: w, videoHeight: h } = videoEl;
+    if (w > MAX_DIM || h > MAX_DIM) {
+      const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
     }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+
+    // Capture the canvas as a MediaStream at 30fps
+    const stream = canvas.captureStream(30);
+
+    // Pick the best supported video codec
+    const mimeType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+      .find(type => MediaRecorder.isTypeSupported(type)) || "video/webm";
+
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: 2_500_000  // 2.5 Mbps cap
+    });
+
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+    // Draw each video frame onto the canvas
+    videoEl.play();
+    recorder.start();
+
+    await new Promise((resolve) => {
+      videoEl.onended = () => { recorder.stop(); resolve(); };
+
+      const drawFrame = () => {
+        if (videoEl.paused || videoEl.ended) return;
+        ctx.drawImage(videoEl, 0, 0, w, h);
+        requestAnimationFrame(drawFrame);
+      };
+      requestAnimationFrame(drawFrame);
+    });
+
+    await new Promise(resolve => { recorder.onstop = resolve; });
+
+    URL.revokeObjectURL(videoEl.src);
+
+    const compressedBlob = new Blob(chunks, { type: mimeType });
+    const compressedFile = new File([compressedBlob], file.name.replace(/\.[^.]+$/, ".webm"), {
+      type: mimeType,
+      lastModified: Date.now()
+    });
+
+    updateStatus("Compression complete! Uploading...", false);
+    return await uploadFile(compressedFile);
+
+  } catch (err) {
+    console.error("Client-side compression failed:", err);
+    updateStatus("Compression failed. Uploading original...", true);
+    return await uploadFile(file);
+  }
+}
+
+
+  async function deleteFromR2(url) {
+    try {
+      const fileKey = new URL(url).pathname.substring(1);
+      await fetch(`${supabaseUrl}/functions/v1/delete-r2-file`, {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ fileKey })
+      });
+    } catch (e) { console.error("R2 Cleanup error", e); }
   }
 
-  // UI STATE MANAGEMENT
   function setStatus(loading, text = "", progress = 0) {
     if (loading) {
       els.submitBtn.disabled = true;
-      els.submitBtn.innerHTML = `<div class="spinner"></div> <span>${text || 'Processing...'}</span>`;
-      els.statusText.classList.remove("hidden");
-      els.statusText.textContent = text;
-      els.progressContainer.style.display = "block";
-      els.progressBar.style.width = `${progress}%`;
+      els.submitBtn.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
+      els.statusText.classList.remove("hidden"); els.statusText.textContent = text;
+      els.progressContainer.style.display = "block"; els.progressBar.style.width = `${progress}%`;
     } else {
       els.submitBtn.disabled = false;
-      els.submitBtn.innerHTML = `<span>Upload Product</span>`;
-      els.statusText.classList.add("hidden");
-      els.progressContainer.style.display = "none";
-      els.progressBar.style.width = `0%`;
-      if(videoTimerInterval) { clearInterval(videoTimerInterval); videoTimerInterval = null; }
+      els.submitBtn.innerHTML = `<span>${editingProductId ? "Update Product" : "Upload Product"}</span>`;
+      els.statusText.classList.add("hidden"); els.progressContainer.style.display = "none";
     }
   }
 
   function updateStatus(text, isWarning = false) {
     els.statusText.textContent = text;
-    els.statusText.style.color = isWarning ? "var(--color-liyog-orange)" : "var(--color-slate-500)";
+    els.statusText.style.color = isWarning ? "var(--liyog-orange)" : "var(--text-muted)";
   }
 
-  function resetForm() {
-    // Clear inputs
-    ["name", "price", "tags", "whatsapp", "youtube", "description"].forEach(id => els[id].value = "");
-    els.category.value = "";
-    els.video.value = "";
-    els.previewVideoBtn.classList.add("hidden");
-    
-    // Clear images
-    selectedImages.forEach(img => URL.revokeObjectURL(img.url));
-    selectedImages = [];
-    renderPreviews();
-    
-    // Scroll to top smoothly
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.resetForm = function () {
+    ["name", "price", "stock", "tags", "whatsapp", "youtube", "description"].forEach(id => els[id].value = "");
+    els.stock.value = "1"; els.category.value = ""; els.video.value = "";
+    els.previewVideoBtn.classList.add("hidden"); els.existingVideoBanner.classList.add("hidden");
+    selectedImages.forEach(img => { if (!img.existing) URL.revokeObjectURL(img.url); });
+    selectedImages = []; filesToDeleteFromR2 = [];
+    editingProductId = null; currentEditingProduct = null;
+    els.formTitle.textContent = "Upload New Product";
+    els.cancelEditBtn.classList.add("hidden");
+    els.submitBtn.innerHTML = `<span>Upload Product</span>`;
+    renderPreviews(); window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
-  // VALIDATION
-  function markInvalid(el) {
-    el.classList.add("input-error", "animate-shake");
-    setTimeout(() => el.classList.remove("animate-shake"), 400);
-  }
-
-function validateSingleField(el, pattern = null) {
-  el.classList.remove("input-error");
-
-  const value = el.value.trim();
-
-  if (!value) return;
-
-  if (pattern && !pattern.test(value)) {
-    el.classList.add("input-error");
-  }
-}
 
   function validateForm() {
     document.querySelectorAll(".input-error").forEach(el => el.classList.remove("input-error"));
     let isValid = true;
-
+    const markInvalid = (el) => {
+      el.classList.add("input-error", "animate-shake");
+      setTimeout(() => el.classList.remove("animate-shake"), 400);
+    }
     if (!els.name.value.trim()) { markInvalid(els.name); isValid = false; }
-    
-    const priceVal = els.price.value.trim();
-    if (!priceVal || isNaN(priceVal) || Number(priceVal) < 0) { markInvalid(els.price); isValid = false; }
-    
+    if (!els.price.value.trim() || isNaN(els.price.value) || Number(els.price.value) < 0) { markInvalid(els.price); isValid = false; }
     const waVal = els.whatsapp.value.replace(/\s+/g, '');
-    if (!waVal || !/^[0-9]{10,15}$/.test(waVal)) { 
-      markInvalid(els.whatsapp); 
-      isValid = false; 
-      if(isValid) toast("WhatsApp must be 10-15 digits only.", "error"); // Only show if this is the only error
-    }
-
-    if (els.youtube.value) {
-      const ytRegex = /^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/;
-      if (!ytRegex.test(els.youtube.value)) { markInvalid(els.youtube); isValid = false; }
-    }
-    
-    if (selectedImages.length === 0) {
-      els.dropZone.classList.add("input-error", "animate-shake");
-      setTimeout(() => els.dropZone.classList.remove("animate-shake"), 400);
-      isValid = false;
-    }
-
+    if (!waVal || !/^[0-9]{10,15}$/.test(waVal)) { markInvalid(els.whatsapp); isValid = false; toast("WhatsApp: 10–15 digits, no spaces.", "error"); }
+    if (els.youtube.value && !/^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$/.test(els.youtube.value)) { markInvalid(els.youtube); isValid = false; }
+    if (selectedImages.length === 0) { markInvalid(els.dropZone); isValid = false; toast("Add at least 1 image.", "error"); }
     return isValid;
   }
 
-  // MODAL PREVIEWS
   window.previewYouTube = () => {
-    const url = els.youtube.value.trim();
-    if(!url) return toast("Enter a YouTube URL first", "info");
-    
-    // Basic extraction to embed format
-    let videoId = "";
-    if(url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1]?.split("?")[0];
-    else if(url.includes("watch?v=")) videoId = url.split("watch?v=")[1]?.split("&")[0];
-    
-    if(!videoId) return toast("Invalid YouTube URL format", "error");
-
-    els.modalContent.innerHTML = `
-  <iframe
-    src="https://www.youtube.com/embed/${videoId}?autoplay=1"
-    style="width:100%; height:100%;"
-    frameborder="0"
-    allow="autoplay; encrypted-media"
-    allowfullscreen>
-  </iframe>
-`;
+    const url = els.youtube.value.trim(); if (!url) return toast("Enter a YouTube URL first.", "info");
+    let videoId = url.includes("youtu.be/") ? url.split("youtu.be/")[1]?.split("?")[0] : (url.includes("watch?v=") ? url.split("watch?v=")[1]?.split("&")[0] : "");
+    if (!videoId) return toast("Invalid YouTube URL format.", "error");
+    els.modalContent.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" style="width:100%;height:100%;" frameborder="0" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
     els.mediaModal.classList.add("active");
   };
 
   window.previewLocalVideo = () => {
-    const file = els.video.files[0];
-    if(!file) return;
-    const url = URL.createObjectURL(file);
-    els.modalContent.innerHTML = `<video src="${url}" style="width:100%; height:100%; object-fit:contain;" controls autoplay></video>`;
+    const file = els.video.files[0]; if (!file) return;
+    els.modalContent.innerHTML = `<video src="${URL.createObjectURL(file)}" style="width:100%;height:100%;object-fit:contain;" controls autoplay></video>`;
     els.mediaModal.classList.add("active");
+  };
+
+  window.previewExistingVideo = () => {
+    if (!currentEditingProduct || !currentEditingProduct.video_url) return;
+    els.modalContent.innerHTML = `<video src="${currentEditingProduct.video_url}" style="width:100%;height:100%;object-fit:contain;" controls autoplay></video>`;
+    els.mediaModal.classList.add("active");
+  };
+
+  window.removeExistingVideo = () => {
+    if (currentEditingProduct && currentEditingProduct.video_url) {
+      filesToDeleteFromR2.push(currentEditingProduct.video_url);
+      currentEditingProduct.video_url = null;
+    }
+    els.existingVideoBanner.classList.add("hidden");
+    toast("Attached video removed.", "info");
+    updateLive();
   };
 
   window.closeModal = () => {
     els.mediaModal.classList.remove("active");
-    setTimeout(() => { els.modalContent.innerHTML = ""; }, 300); // Clear memory after transition
+    setTimeout(() => { els.modalContent.innerHTML = ""; }, 300);
   };
+  els.mediaModal.addEventListener("click", (e) => { if (e.target === els.mediaModal) closeModal(); });
 
-els.mediaModal.addEventListener("click", (e) => {
-  if (e.target === els.mediaModal) {
-    closeModal();
-  }
-});
-
-  // EVENT LISTENERS
+  // LISTENERS
   els.dropZone.addEventListener("click", () => els.images.click());
   els.dropZone.addEventListener("dragover", e => { e.preventDefault(); els.dropZone.classList.add("dragover"); });
   els.dropZone.addEventListener("dragleave", () => els.dropZone.classList.remove("dragover"));
   els.dropZone.addEventListener("drop", e => { e.preventDefault(); els.dropZone.classList.remove("dragover"); handleFiles(e.dataTransfer.files); });
   els.images.addEventListener("change", e => handleFiles(e.target.files));
-  
   els.video.addEventListener("change", (e) => {
-    if(e.target.files.length > 0) els.previewVideoBtn.classList.remove("hidden");
+    if (e.target.files.length > 0) els.previewVideoBtn.classList.remove("hidden");
     else els.previewVideoBtn.classList.add("hidden");
+    updateLive();
   });
+  ["name", "price", "description", "stock"].forEach(id => { els[id].addEventListener("input", updateLive); });
 
-["name", "price", "description"].forEach(id => {
-  els[id].addEventListener("input", updateLive);
-});
-
-els.name.addEventListener("input", () => {
-  validateSingleField(els.name);
-});
-
-els.price.addEventListener("input", () => {
-  validateSingleField(els.price, /^[0-9]+$/);
-});
-
-els.whatsapp.addEventListener("input", () => {
-  validateSingleField(els.whatsapp, /^[0-9]{10,15}$/);
-});
-
-els.youtube.addEventListener("input", () => {
-  validateSingleField(
-    els.youtube,
-    /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/
-  );
-});
-
-  // MAIN SUBMIT FUNCTION
+  // SUBMIT
   window.submitProduct = async function () {
     if (uploading) return;
-    
-    if (!validateForm()) {
-      toast("Please fix the highlighted errors", "error");
-      return;
-    }
-
-    uploading = true;
-    setStatus(true, "Initializing upload...", 5);
-
+    if (!validateForm()) return toast("Please fix the highlighted errors.", "error");
+    uploading = true; setStatus(true, "Initializing...", 5);
     try {
-      // 1. Upload Images
-      const imageUrls = [];
-      const totalImages = selectedImages.length;
-      
+      const imageUrls = []; const totalImages = selectedImages.length;
       for (let i = 0; i < totalImages; i++) {
-        let percentage = 5 + ((i / totalImages) * 40); // 5% to 45% of total progress
-        setStatus(true, `Uploading image ${i + 1} of ${totalImages}...`, percentage);
-        imageUrls.push(await uploadFile(selectedImages[i].file));
+        let pct = 5 + ((i / totalImages) * 40);
+        setStatus(true, `Uploading image ${i + 1}/${totalImages}...`, pct);
+        if (selectedImages[i].existing) imageUrls.push(selectedImages[i].url);
+        else imageUrls.push(await uploadFile(selectedImages[i].file));
       }
-
-      // 2. Upload Video (if exists)
-      let uploadedVideo = null;
-      const videoFile = els.video.files[0];
-
-      if (videoFile) {
-        if (videoFile.size > 50 * 1024 * 1024) throw new Error("Video must be under 50MB");
-        
-        setStatus(true, "Compressing video (this may take a minute)...", 50);
-        
-        let seconds = 0;
-        videoTimerInterval = setInterval(() => {
-          seconds++;
-          updateStatus(`Compressing video... ${seconds}s elapsed`);
-        }, 1000);
-
-        uploadedVideo = await compressVideo(videoFile);
-        clearInterval(videoTimerInterval);
-        videoTimerInterval = null;
+      let finalVideoUrl = currentEditingProduct ? currentEditingProduct.video_url : null;
+      const newVideoFile = els.video.files[0];
+      if (newVideoFile) {
+        setStatus(true, "Processing video...", 60);
+        if (finalVideoUrl) filesToDeleteFromR2.push(finalVideoUrl);
+        finalVideoUrl = await compressVideo(newVideoFile);
       }
-
-      // 3. Finalize Database Entry
-      setStatus(true, "Finalizing product creation...", 90);
-
-      const { error } = await supabaseClient.rpc("create_product", {
-        p_name: els.name.value.trim(),
-        p_price: Number(els.price.value),
-        p_image_urls: imageUrls,
-        p_description: els.description.value.trim(),
-        p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
-        p_category_id: els.category.value || null,
-        p_tags: els.tags.value.trim(),
-        p_video_url: uploadedVideo,
-        p_youtube_url: els.youtube.value.trim() || null,
-        p_sort_order: 0
-      });
-
-      if (error) throw error;
-
-      setStatus(true, "Done!", 100);
-      toast("Product listed successfully!", "success", 5000);
-      
-      // Cleanup UI
+      setStatus(true, editingProductId ? "Updating database..." : "Creating product...", 90);
+      let response;
+      if (editingProductId) {
+        response = await supabaseClient.rpc("update_product", {
+          p_id: editingProductId, p_name: els.name.value.trim(), p_price: String(els.price.value),
+          p_image_urls: imageUrls, p_description: els.description.value.trim(),
+          p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
+          p_category_id: els.category.value || null, p_tags: els.tags.value.trim(),
+          p_video_url: finalVideoUrl, p_youtube_url: els.youtube.value.trim() || null,
+          p_is_visible: currentEditingProduct.is_visible, p_is_featured: currentEditingProduct.is_featured,
+          p_stock_quantity: parseInt(els.stock.value) || 0
+        });
+        if (response.error) throw response.error;
+        for (let url of filesToDeleteFromR2) { await deleteFromR2(url); }
+        toast("Product updated successfully! ✓", "success");
+      } else {
+        response = await supabaseClient.rpc("create_product", {
+          p_name: els.name.value.trim(), p_price: String(els.price.value),
+          p_image_urls: imageUrls, p_description: els.description.value.trim(),
+          p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
+          p_category_id: els.category.value || null, p_tags: els.tags.value.trim(),
+          p_video_url: finalVideoUrl, p_youtube_url: els.youtube.value.trim() || null, p_sort_order: 0
+        });
+        if (response.error) throw response.error;
+        toast("Product listed successfully! ✓", "success");
+      }
+      await loadProducts();
       setTimeout(() => { resetForm(); }, 500);
-
     } catch (error) {
       console.error(error);
-      toast(error.message || "Upload failed", "error");
+      toast(error.message || "Action failed", "error");
     } finally {
-      uploading = false;
-      setStatus(false);
+      uploading = false; setStatus(false);
     }
   };
 
-  // INITIALIZATION
+  window.toggleVisible = async function (id, current) {
+    const { error } = await supabaseClient.from("products").update({ is_visible: !current }).eq("id", id);
+    if (error) return toast("Failed to update visibility.", "error");
+    loadProducts();
+  };
+  window.toggleFeatured = async function (id, current) {
+    const { error } = await supabaseClient.from("products").update({ is_featured: !current }).eq("id", id);
+    if (error) return toast("Failed to update featured.", "error");
+    loadProducts();
+  };
+  window.deleteProduct = async function (id) {
+    if (!confirm("Delete this product permanently?")) return;
+    const { data, error } = await supabaseClient.rpc("delete_product_full", { p_id: id });
+    if (error) return toast("Delete failed.", "error");
+    const files = [...(data.images || []), data.video].filter(Boolean);
+    for (const url of files) await deleteFromR2(url);
+    toast("Product deleted.", "success");
+    loadProducts();
+  };
+
+  // LOAD PRODUCTS
+  async function loadProducts() {
+    // Skeleton
+    els.productsTableBody.innerHTML = `<tr><td colspan="5" style="padding:16px;"><div class="skeleton" style="height:52px;width:100%;"></div></td></tr><tr><td colspan="5" style="padding:8px 16px;"><div class="skeleton" style="height:52px;width:100%;"></div></td></tr>`;
+    els.productsMobileContainer.innerHTML = `<div class="skeleton" style="height:110px;width:100%;"></div><div class="skeleton" style="height:110px;width:100%;margin-top:12px;"></div>`;
+
+    let query = supabaseClient.from("products").select("*, categories(name)", { count: "exact" }).order("sort_order", { ascending: true });
+    if (currentSearch) query = query.ilike("name", `%${currentSearch}%`);
+    if (currentVisibilityFilter === "visible") query = query.eq("is_visible", true);
+    if (currentVisibilityFilter === "hidden") query = query.eq("is_visible", false);
+    query = query.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      els.productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--liyog-red);padding:24px;font-weight:600;">Failed to load products</td></tr>`;
+      els.productsMobileContainer.innerHTML = `<p style="text-align:center;color:var(--liyog-red);padding:24px;font-weight:600;">Failed to load products</p>`;
+      return toast("Failed to load products", "error");
+    }
+
+    els.productsTableBody.innerHTML = "";
+    els.productsMobileContainer.innerHTML = "";
+
+    if (data.length === 0) {
+      els.productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:40px;font-size:15px;">No products found</td></tr>`;
+      els.productsMobileContainer.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:40px 0;font-size:15px;font-weight:600;">No products found</div>`;
+    }
+
+    data.forEach(product => {
+      const priceFmt = Number(product.price || 0).toLocaleString();
+      const imgUrl = product.image_urls?.[0] || 'https://placehold.co/100x100';
+      const catName = product.categories?.name || 'Uncategorized';
+
+      // DESKTOP ROW
+      const tr = document.createElement("tr");
+      tr.dataset.id = product.id;
+      tr.innerHTML = `
+        <td><span class="drag-handle">☰</span></td>
+        <td><img src="${imgUrl}" class="product-thumb" alt="${product.name}"></td>
+        <td>
+          <div class="prod-name">${product.name || "Unnamed"}</div>
+          <div class="prod-price">₦${priceFmt}</div>
+          <div class="prod-meta">${catName} · Stock: ${product.stock_quantity || 0}</div>
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="toggle-btn ${product.is_visible ? 'active' : ''}" onclick="toggleVisible('${product.id}', ${product.is_visible})">👁 Visible</button>
+            <button class="toggle-btn ${product.is_featured ? 'featured' : ''}" onclick="toggleFeatured('${product.id}', ${product.is_featured})">⭐ Featured</button>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="action-btn edit-btn" onclick="editProduct('${product.id}')">✏️ Edit</button>
+            <button class="action-btn delete-btn" onclick="deleteProduct('${product.id}')">🗑</button>
+          </div>
+        </td>
+      `;
+      els.productsTableBody.appendChild(tr);
+
+      // MOBILE CARD
+      const card = document.createElement("div");
+      card.className = "mobile-product-card";
+      card.dataset.id = product.id;
+      card.innerHTML = `
+        <div class="mobile-card-top">
+          <span class="mobile-card-drag drag-handle">☰</span>
+          <img src="${imgUrl}" class="mobile-card-img" alt="${product.name}">
+          <div class="mobile-card-info">
+            <div class="mobile-card-name">${product.name || "Unnamed"}</div>
+            <div class="mobile-card-price">₦${priceFmt}</div>
+            <div class="mobile-card-cat">${catName}</div>
+            <div class="mobile-card-stock">Stock: ${product.stock_quantity || 0}</div>
+          </div>
+        </div>
+        <div class="mobile-card-footer">
+          <div class="mobile-card-toggles">
+            <button class="toggle-btn ${product.is_visible ? 'active' : ''}" onclick="toggleVisible('${product.id}', ${product.is_visible})">👁 Vis</button>
+            <button class="toggle-btn ${product.is_featured ? 'featured' : ''}" onclick="toggleFeatured('${product.id}', ${product.is_featured})">⭐ Feat</button>
+          </div>
+          <div class="mobile-card-actions">
+            <button class="action-btn edit-btn" onclick="editProduct('${product.id}')">✏️</button>
+            <button class="action-btn delete-btn" onclick="deleteProduct('${product.id}')">🗑</button>
+          </div>
+        </div>
+      `;
+      els.productsMobileContainer.appendChild(card);
+    });
+
+    applyTableLayout();
+
+    // PAGINATION
+    const paginationWrap = document.getElementById("pagination");
+    paginationWrap.innerHTML = "";
+    const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
+    if (totalPages > 1) {
+      const prevBtn = document.createElement("button");
+      prevBtn.className = "page-btn"; prevBtn.textContent = "← Prev";
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => { currentPage--; loadProducts(); };
+      paginationWrap.appendChild(prevBtn);
+
+      const pageInd = document.createElement("span");
+      pageInd.className = "page-indicator";
+      pageInd.textContent = `${currentPage} / ${totalPages}`;
+      paginationWrap.appendChild(pageInd);
+
+      const nextBtn = document.createElement("button");
+      nextBtn.className = "page-btn"; nextBtn.textContent = "Next →";
+      nextBtn.disabled = currentPage >= totalPages;
+      nextBtn.onclick = () => { currentPage++; loadProducts(); };
+      paginationWrap.appendChild(nextBtn);
+    }
+  }
+
+  // SEARCH & FILTER
+  document.getElementById("searchProducts").addEventListener("input", e => { currentSearch = e.target.value.trim(); currentPage = 1; loadProducts(); });
+  document.getElementById("filterVisibility").addEventListener("change", e => { currentVisibilityFilter = e.target.value; currentPage = 1; loadProducts(); });
+
+  // EDIT PRODUCT
+  window.editProduct = async function (id) {
+    resetForm();
+    toast("Loading product data...", "info", 2000);
+    const { data, error } = await supabaseClient.from("products").select("*").eq("id", id).single();
+    if (error) return toast("Failed to load product.", "error");
+
+    editingProductId = id;
+    currentEditingProduct = data;
+
+    els.formTitle.textContent = "Edit Product";
+    els.cancelEditBtn.classList.remove("hidden");
+    els.name.value = data.name || "";
+    els.price.value = data.price || "";
+    els.stock.value = data.stock_quantity || "0";
+    els.description.value = data.description || "";
+    els.whatsapp.value = data.whatsapp_number || "";
+    els.category.value = data.category_id || "";
+    els.tags.value = data.tags ? (Array.isArray(data.tags) ? data.tags.join(",") : data.tags) : "";
+    els.youtube.value = data.youtube_url || "";
+
+    if (data.video_url) els.existingVideoBanner.classList.remove("hidden");
+
+    selectedImages = (data.image_urls || []).map(url => ({
+      id: crypto.randomUUID(), file: null, url, existing: true
+    }));
+
+    renderPreviews();
+    els.submitBtn.innerHTML = `<span>Update Product</span>`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector('[data-tab="uploadTab"]').click();
+  };
+
+  // TAB SWITCHER
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".admin-section").forEach(sec => sec.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // INIT
   updateLive();
   await loadCategories();
+  await loadProducts();
 });
 </script>
-<script src="https://bartoos-1.github.io/store/global-error.js"></script>
 
+<script src="https://bartoos-1.github.io/store/global-error.js"></script>
 </body>
 </html>
 
