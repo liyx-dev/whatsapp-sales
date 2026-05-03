@@ -4,17 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Liyog Admin Upload | Premium Edition</title>
-<!-- COI Service Worker - must be first -->
-<script>
-  if (!crossOriginIsolated) {
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/coi-serviceworker@0.1.7/coi-serviceworker.min.js";
-    document.head.appendChild(s);
-  }
-</script>
 
-<!-- FFmpeg UMD - exposes window.FFmpegWASM -->
-<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
   <!-- Google Fonts: Syne (display) + DM Sans (body) — premium, modern feel -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1023,6 +1013,313 @@
       margin-bottom: 4px;
     }
   </style>
+<style id="tabs-extra-css">
+
+/* ── CATEGORY PILLS / GRID ─────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 6px;
+}
+@media (max-width: 480px) {
+  .cat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
+.cat-pill {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 18px;
+  padding: 16px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: grab;
+  position: relative;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+  text-align: center;
+}
+.cat-pill:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: rgba(40,164,40,0.35);
+}
+.cat-pill-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: linear-gradient(135deg, rgba(40,164,40,0.12), rgba(24,119,242,0.08));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(40,164,40,0.15);
+  overflow: hidden;
+}
+.cat-pill-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.cat-pill-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+  word-break: break-word;
+  line-height: 1.3;
+}
+.cat-pill-actions {
+  display: flex; gap: 6px; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.cat-pill:hover .cat-pill-actions { opacity: 1; }
+.cat-pill-btn {
+  border: none;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font-body);
+}
+.cat-edit-btn  { background: #eff6ff; color: var(--liyog-blue); }
+.cat-edit-btn:hover  { background: var(--liyog-blue); color: #fff; }
+.cat-delete-btn{ background: #fef2f2; color: var(--liyog-red); }
+.cat-delete-btn:hover{ background: var(--liyog-red); color: #fff; }
+
+.cat-pill.sortable-ghost { opacity: 0.3; border: 2px dashed var(--liyog-blue) !important; }
+
+/* Add category card */
+.cat-add-card {
+  background: linear-gradient(135deg, rgba(40,164,40,0.05), rgba(24,119,242,0.04));
+  border: 2px dashed rgba(40,164,40,0.3);
+  border-radius: 18px;
+  padding: 16px 14px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  cursor: pointer;
+  transition: all 0.22s;
+  min-height: 140px;
+  justify-content: center;
+  color: var(--liyog-green);
+}
+.cat-add-card:hover {
+  border-color: var(--liyog-green);
+  background: rgba(40,164,40,0.08);
+  transform: translateY(-2px);
+}
+.cat-add-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--liyog-green), var(--liyog-green-dark));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(40,164,40,0.3);
+}
+.cat-add-label { font-weight: 700; font-size: 13px; }
+
+/* Category count badge */
+.cat-count-badge {
+  background: linear-gradient(135deg, var(--liyog-green), var(--liyog-green-dark));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(40,164,40,0.3);
+}
+
+/* Category modal / inline editor */
+.cat-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  z-index: 10001;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.cat-modal-overlay.open { opacity: 1; pointer-events: all; }
+.cat-modal-box {
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--border-subtle);
+  transform: scale(0.96) translateY(10px);
+  transition: transform 0.25s;
+}
+.cat-modal-overlay.open .cat-modal-box { transform: scale(1) translateY(0); }
+.cat-modal-title {
+  font-family: var(--font-display);
+  font-weight: 800; font-size: 1.15rem;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.cat-icon-preview {
+  width: 60px; height: 60px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(40,164,40,0.1), rgba(24,119,242,0.07));
+  border: 1.5px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  margin: 0 auto 10px;
+  overflow: hidden;
+  transition: all 0.2s;
+  position: relative;
+}
+.cat-icon-preview:hover { border-color: var(--liyog-green); transform: scale(1.04); }
+.cat-icon-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.cat-icon-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-bottom: 16px; }
+.cat-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+/* ── SETTINGS TAB ───────────────────────────────── */
+.settings-grid {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 768px) {
+  .settings-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.settings-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  border: 1.5px solid var(--border-subtle);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+.settings-card:hover { box-shadow: var(--shadow-md); }
+.settings-card-header {
+  padding: 18px 20px 16px;
+  border-bottom: 1.5px solid var(--border-subtle);
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, var(--surface-soft), #fff);
+}
+.settings-card-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.settings-card-title {
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 15px;
+  color: var(--text-primary);
+}
+.settings-card-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.settings-card-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Logo upload area */
+.logo-upload-zone {
+  width: 100%; aspect-ratio: 16/7;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border-subtle);
+  background: var(--surface-soft);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; cursor: pointer;
+  transition: all 0.22s;
+  overflow: hidden;
+  position: relative;
+}
+.logo-upload-zone:hover { border-color: var(--liyog-green); background: rgba(40,164,40,0.03); }
+.logo-upload-zone img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 8px;
+}
+.logo-upload-hint { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.logo-upload-sub  { font-size: 11px; color: var(--text-muted); }
+
+/* Save settings button */
+.settings-save-bar {
+  background: linear-gradient(135deg, var(--surface-card), var(--surface-soft));
+  border-top: 1.5px solid var(--border-subtle);
+  padding: 18px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  margin-top: 4px;
+}
+.settings-saved-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700;
+  color: var(--liyog-green);
+  opacity: 0; transition: opacity 0.3s;
+}
+.settings-saved-tag.show { opacity: 1; }
+
+/* Currency selector */
+.currency-options {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.currency-chip {
+  padding: 7px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--surface-soft);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.18s;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+}
+.currency-chip.active {
+  background: linear-gradient(135deg, var(--liyog-green), var(--liyog-green-dark));
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 12px rgba(40,164,40,0.3);
+}
+.currency-chip:hover:not(.active) { border-color: var(--liyog-green); color: var(--liyog-green); }
+
+/* Trust badge chips */
+.badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, rgba(40,164,40,0.08), rgba(24,119,242,0.06));
+  border: 1.5px solid rgba(40,164,40,0.2);
+  border-radius: 50px;
+  padding: 6px 14px;
+  font-size: 12px; font-weight: 700;
+  color: var(--text-primary);
+  cursor: default;
+}
+.badge-chip .remove-badge {
+  cursor: pointer; color: var(--text-muted);
+  font-size: 14px; line-height: 1;
+  transition: color 0.15s;
+}
+.badge-chip .remove-badge:hover { color: var(--liyog-red); }
+.badge-add-row { display: flex; gap: 8px; align-items: center; }
+
+/* Settings skeleton */
+.settings-skel {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 10px;
+}
+
+/* Full-width settings card */
+.settings-card.full { grid-column: 1 / -1; }
+
+/* Danger zone */
+.danger-zone-card {
+  border-color: rgba(255,59,48,0.2) !important;
+  background: rgba(255,59,48,0.02);
+}
+.danger-zone-card .settings-card-header {
+  background: linear-gradient(135deg, rgba(255,59,48,0.04), rgba(255,59,48,0.02));
+}
+</style>
+
 </head>
 <body>
 
@@ -1312,34 +1609,253 @@
   <!-- ================================================
        CATEGORIES TAB
   ================================================= -->
-  <div id="categoriesTab" class="admin-section">
-    <div class="card" style="padding:28px;">
-      <h2 class="section-title" style="margin-bottom:20px;">🗂 Categories</h2>
-      <div class="tab-placeholder">
-        <div class="tab-placeholder-icon">🗂</div>
-        <h3 style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;">Categories Manager</h3>
-        <p style="color:var(--text-muted);font-size:14px;max-width:300px;">Create and organise your product categories here.</p>
-      </div>
-      <div id="categoriesList"></div>
+
+<div id="categoriesTab" class="admin-section">
+
+  <!-- HEADER BAR -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:20px;">
+    <div>
+      <h2 class="section-title">🗂 Category Manager</h2>
+      <p class="section-subtitle">Create, reorder and manage your product categories</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span class="cat-count-badge" id="catCountBadge">0 categories</span>
     </div>
   </div>
+
+  <!-- CATEGORY GRID (skeletons replaced by JS) -->
+  <div class="cat-grid" id="catGrid">
+    <!-- skeleton placeholders shown on load -->
+    <div class="cat-pill" style="pointer-events:none;">
+      <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
+      <div class="settings-skel" style="width:70%;height:12px;border-radius:6px;"></div>
+    </div>
+    <div class="cat-pill" style="pointer-events:none;">
+      <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
+      <div class="settings-skel" style="width:80%;height:12px;border-radius:6px;"></div>
+    </div>
+    <div class="cat-pill" style="pointer-events:none;">
+      <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
+      <div class="settings-skel" style="width:60%;height:12px;border-radius:6px;"></div>
+    </div>
+  </div>
+
+  <!-- CATEGORY MODAL -->
+  <div class="cat-modal-overlay" id="catModal">
+    <div class="cat-modal-box">
+      <div class="cat-modal-title">
+        <span id="catModalIcon">➕</span>
+        <span id="catModalTitle">New Category</span>
+      </div>
+
+      <!-- Icon / Image picker -->
+      <div class="cat-icon-preview" id="catIconPreview" onclick="document.getElementById('catIconFile').click()">
+        <span id="catIconEmoji">🏷️</span>
+      </div>
+      <p class="cat-icon-hint">Tap to upload category image (optional)</p>
+      <input type="file" id="catIconFile" accept="image/*" style="display:none;">
+
+      <!-- Name input -->
+      <label class="form-label">Category Name *</label>
+      <input type="text" id="catNameInput" class="input-premium" placeholder="e.g. Shoes, Phones, Fashion">
+
+      <!-- Emoji shortcut row -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <span style="font-size:11px;color:var(--text-muted);font-weight:700;align-self:center;">Quick:</span>
+        <span style="font-size:0;">
+          <!-- common icons users can tap -->
+        </span>
+        <!-- rendered dynamically by JS -->
+        <div id="emojiPicker" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="cat-modal-actions">
+        <button class="btn-ghost w-full" onclick="closeCatModal()" style="flex:1;">Cancel</button>
+        <button class="btn-primary w-full" id="catSaveBtn" onclick="saveCategory()" style="flex:2;padding:12px;">
+          Save Category
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#categoriesTab -->
 
   <!-- ================================================
        SETTINGS TAB
   ================================================= -->
-  <div id="settingsTab" class="admin-section">
-    <div class="card" style="padding:28px;">
-      <h2 class="section-title" style="margin-bottom:20px;">⚙️ Store Settings</h2>
-      <div class="tab-placeholder">
-        <div class="tab-placeholder-icon">⚙️</div>
-        <h3 style="font-family:var(--font-display);font-weight:700;font-size:1.1rem;">Settings Panel</h3>
-        <p style="color:var(--text-muted);font-size:14px;max-width:300px;">Store configuration and profile options will live here.</p>
-      </div>
-      <div id="profileSettings"></div>
-    </div>
+ <div id="settingsTab" class="admin-section">
+
+  <div style="margin-bottom:22px;">
+    <h2 class="section-title">⚙️ Store Settings</h2>
+    <p class="section-subtitle">Configure your global store profile — used across UK, CA, ZA &amp; Nigeria</p>
   </div>
 
-</div><!-- /admin-wrapper -->
+  <!-- SKELETON (hidden once loaded) -->
+  <div id="settingsSkeleton" class="settings-grid" style="margin-bottom:0;">
+    <div class="settings-card"><div class="settings-card-body" style="gap:10px;">
+      <div class="settings-skel" style="height:16px;width:60%;"></div>
+      <div class="settings-skel" style="height:44px;width:100%;"></div>
+      <div class="settings-skel" style="height:44px;width:100%;"></div>
+    </div></div>
+    <div class="settings-card"><div class="settings-card-body" style="gap:10px;">
+      <div class="settings-skel" style="height:16px;width:40%;"></div>
+      <div class="settings-skel" style="height:80px;width:100%;border-radius:var(--radius-lg);"></div>
+    </div></div>
+  </div>
+
+  <!-- REAL SETTINGS (shown once loaded) -->
+  <div id="settingsForm" style="display:none;">
+    <div class="settings-grid">
+
+      <!-- 1 ── BUSINESS IDENTITY -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">🏪</div>
+          <div>
+            <div class="settings-card-title">Business Identity</div>
+            <div class="settings-card-sub">Name, tagline &amp; contact</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div>
+            <label class="form-label">Store / Business Name</label>
+            <input type="text" id="st_business_name" class="input-premium" placeholder="e.g. Liyog Premium Store">
+          </div>
+          <div>
+            <label class="form-label">Tagline</label>
+            <input type="text" id="st_tagline" class="input-premium" placeholder="e.g. Quality you can trust">
+          </div>
+          <div>
+            <label class="form-label">WhatsApp Number</label>
+            <input type="tel" id="st_whatsapp" class="input-premium" placeholder="e.g. 447911123456">
+            <p style="font-size:11px;color:var(--text-muted);margin-top:5px;">Include country code — no + or spaces (UK: 44, CA: 1, ZA: 27, NG: 234)</p>
+          </div>
+          <div>
+            <label class="form-label">Store Bio / Description</label>
+            <textarea id="st_bio" class="input-premium" style="min-height:90px;resize:vertical;" placeholder="Tell customers about your store..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 ── LOGO -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(24,119,242,.1),rgba(24,119,242,.06));">🖼️</div>
+          <div>
+            <div class="settings-card-title">Store Logo</div>
+            <div class="settings-card-sub">Appears on your storefront &amp; receipts</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div class="logo-upload-zone" id="logoZone" onclick="document.getElementById('logoFileInput').click()">
+            <img id="logoPreviewImg" src="" alt="logo" style="display:none;">
+            <span id="logoUploadIcon" style="font-size:32px;">🏪</span>
+            <p class="logo-upload-hint">Tap to upload logo</p>
+            <p class="logo-upload-sub">PNG, JPG, WEBP · recommended 400×400</p>
+          </div>
+          <input type="file" id="logoFileInput" accept="image/*" style="display:none;">
+          <button class="btn-ghost w-full" id="removeLogoBtn" style="display:none;font-size:13px;" onclick="removeLogo()">✕ Remove Logo</button>
+        </div>
+      </div>
+
+      <!-- 3 ── WHATSAPP MESSAGE -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">💬</div>
+          <div>
+            <div class="settings-card-title">WhatsApp Message</div>
+            <div class="settings-card-sub">Default order message sent by customers</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div>
+            <label class="form-label">Default Message Template</label>
+            <textarea id="st_wa_message" class="input-premium" style="min-height:80px;resize:vertical;" placeholder="Hi, I want to buy [Product Name]"></textarea>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:5px;">Use <strong>[Product Name]</strong> and <strong>[Price]</strong> as placeholders — they auto-fill.</p>
+          </div>
+          <div>
+            <label class="form-label">Response Time Text</label>
+            <input type="text" id="st_response_time" class="input-premium" placeholder="e.g. Usually replies within 1 hour">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 ── DELIVERY & SHIPPING -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(255,122,0,.1),rgba(255,122,0,.06));">🚚</div>
+          <div>
+            <div class="settings-card-title">Delivery &amp; Shipping</div>
+            <div class="settings-card-sub">Visible to all customers on checkout</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div>
+            <label class="form-label">Delivery Info</label>
+            <textarea id="st_delivery_info" class="input-premium" style="min-height:80px;resize:vertical;" placeholder="e.g. Free delivery on orders over £50. 2–5 business days UK. Shipping to CA, ZA &amp; NG available."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 ── CURRENCY (full width) -->
+      <div class="settings-card full">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(255,215,0,.18),rgba(255,215,0,.08));">💱</div>
+          <div>
+            <div class="settings-card-title">Currency Symbol</div>
+            <div class="settings-card-sub">Select your primary storefront currency</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div class="currency-options" id="currencyOptions">
+            <button class="currency-chip" data-symbol="₦" onclick="selectCurrency(this)">₦ Naira (NG)</button>
+            <button class="currency-chip" data-symbol="£" onclick="selectCurrency(this)">£ Pound (UK)</button>
+            <button class="currency-chip" data-symbol="$" onclick="selectCurrency(this)">$ Dollar (CA/US)</button>
+            <button class="currency-chip" data-symbol="R" onclick="selectCurrency(this)">R Rand (ZA)</button>
+            <button class="currency-chip" data-symbol="€" onclick="selectCurrency(this)">€ Euro</button>
+            <button class="currency-chip" data-symbol="GH₵" onclick="selectCurrency(this)">GH₵ Cedi (GH)</button>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Selected: <strong id="selectedCurrencyLabel">None</strong></p>
+        </div>
+      </div>
+
+      <!-- 6 ── TRUST BADGES (full width) -->
+      <div class="settings-card full">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">🛡️</div>
+          <div>
+            <div class="settings-card-title">Trust Badges</div>
+            <div class="settings-card-sub">Short trust signals shown near the buy button</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div class="badge-list" id="badgeList"></div>
+          <div class="badge-add-row">
+            <input type="text" id="newBadgeInput" class="input-premium" placeholder="e.g. Secure Checkout, 30-Day Returns" style="flex:1;">
+            <button class="btn-primary" onclick="addBadge()" style="padding:10px 18px;flex-shrink:0;">+ Add</button>
+          </div>
+          <p style="font-size:11px;color:var(--text-muted);">Press + to add. Click × on a badge to remove it.</p>
+        </div>
+      </div>
+
+    </div><!-- /settings-grid -->
+
+    <!-- SAVE BAR -->
+    <div class="settings-save-bar">
+      <span class="settings-saved-tag" id="settingsSavedTag">✓ Saved successfully</span>
+      <button class="btn-primary" id="saveSettingsBtn" onclick="saveSettings()" style="padding:13px 32px;font-size:15px;">
+        Save All Settings
+      </button>
+    </div>
+
+  </div><!-- /#settingsForm -->
+
+</div> 
+
+
+</div>
+
+<!-- /admin-wrapper -->
 
 <!-- ================================================
      RESPONSIVE TABLE SHOW/HIDE LOGIC
@@ -1368,6 +1884,7 @@
 <script>
 const supabaseUrl = "https://ugffezktrojjhfbaxrrq.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnZmZlemt0cm9qamhmYmF4cnJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODg3NzIsImV4cCI6MjA5MTI2NDc3Mn0.gzFuLSj225QRnxdwyrH25Xpe1YZqPiK7fp_nrsETsW8";
+const renderUrl = "https://video-compressor-ilg5.onrender.com";
 
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -1555,7 +2072,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     els.dropZone.style.opacity = "1"; renderPreviews(); els.images.value = "";
   }
 
-    async function uploadFile(file) {
+function validateVideo(file) {
+  return new Promise((resolve) => {
+    const MAX_SIZE_MB = 50;
+
+    // Convert MB to bytes
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+    // 1. File size check
+    if (file.size > MAX_SIZE_BYTES) {
+      toast(
+        `Video is too large. Please upload a file under ${MAX_SIZE_MB}MB.`,
+        "error"
+      );
+      return resolve(false);
+    }
+
+    // 2. Basic file validation
+    const video = document.createElement("video");
+    const videoURL = URL.createObjectURL(file);
+
+    video.src = videoURL;
+
+    video.onloadeddata = () => {
+      URL.revokeObjectURL(videoURL);
+      resolve(true);
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(videoURL);
+      toast(
+        "We couldn’t process this video. Please upload a valid video file.",
+        "error"
+      );
+      resolve(false);
+    };
+  });
+}
+
+  async function uploadFile(file) {
   // Step 1: Get presigned PUT URL
   const response = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
     method: "POST",
@@ -1577,72 +2132,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   return result.publicUrl;
 }
 
-  async function compressVideo(file) {
-  updateStatus("Loading compressor (one-time)...", false);
 
-  try {
-    const { FFmpeg } = FFmpegWASM;
-
-    const ffmpeg = new FFmpeg();
-
-    // toBlobURL fetches the file and creates a local blob URL
-    // This bypasses CORS issues with CDN-hosted wasm files
-    const toBlobURL = async (url, mimeType) => {
-      const res = await fetch(url);
-      const blob = new Blob([await res.arrayBuffer()], { type: mimeType });
-      return URL.createObjectURL(blob);
-    };
-
-    const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
-
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-    });
-
-    updateStatus("Compressing video...", false);
-
-    // Write input file into FFmpeg virtual filesystem
-    const inputData = await file.arrayBuffer();
-    await ffmpeg.writeFile("input.mp4", new Uint8Array(inputData));
-
-    // Same settings as your server that gave you 39MB → 3MB
-    await ffmpeg.exec([
-      "-i", "input.mp4",
-      "-vcodec", "libx264",
-      "-crf", "30",
-      "-preset", "fast",
-      "-vf", "scale=720:-2",
-      "-movflags", "+faststart",
-      "-y",
-      "output.mp4"
-    ]);
-
-    const data = await ffmpeg.readFile("output.mp4");
-    const compressedBlob = new Blob([data.buffer], { type: "video/mp4" });
-    const compressedFile = new File(
-      [compressedBlob],
-      file.name.replace(/\.[^.]+$/, ".mp4"),
-      { type: "video/mp4", lastModified: Date.now() }
-    );
-
-    await ffmpeg.deleteFile("input.mp4");
-    await ffmpeg.deleteFile("output.mp4");
-
-    const originalMB = (file.size / 1024 / 1024).toFixed(2);
-    const compressedMB = (compressedFile.size / 1024 / 1024).toFixed(2);
-    console.log(`Compressed: ${originalMB}MB → ${compressedMB}MB`);
-
-    updateStatus("Compression complete! Uploading...", false);
-    return await uploadFile(compressedFile);
-
-  } catch (err) {
-    console.error("Compression failed:", err);
-    updateStatus("Compression failed. Uploading original...", true);
-    return await uploadFile(file);
-  }
-}
-
+  
   async function deleteFromR2(url) {
     try {
       const fileKey = new URL(url).pathname.substring(1);
@@ -1749,62 +2240,71 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   ["name", "price", "description", "stock"].forEach(id => { els[id].addEventListener("input", updateLive); });
 
-  // SUBMIT
-  window.submitProduct = async function () {
-    if (uploading) return;
-    if (!validateForm()) return toast("Please fix the highlighted errors.", "error");
-    uploading = true; setStatus(true, "Initializing...", 5);
-    try {
-      const imageUrls = []; const totalImages = selectedImages.length;
-      for (let i = 0; i < totalImages; i++) {
-        let pct = 5 + ((i / totalImages) * 40);
-        setStatus(true, `Uploading image ${i + 1}/${totalImages}...`, pct);
-        if (selectedImages[i].existing) imageUrls.push(selectedImages[i].url);
-        else imageUrls.push(await uploadFile(selectedImages[i].file));
-      }
-      let finalVideoUrl = currentEditingProduct ? currentEditingProduct.video_url : null;
-      const newVideoFile = els.video.files[0];
-      if (newVideoFile) {
-        setStatus(true, "Processing video...", 60);
-        if (finalVideoUrl) filesToDeleteFromR2.push(finalVideoUrl);
-        finalVideoUrl = await compressVideo(newVideoFile);
-      }
-      setStatus(true, editingProductId ? "Updating database..." : "Creating product...", 90);
-      let response;
-      if (editingProductId) {
-        response = await supabaseClient.rpc("update_product", {
-          p_id: editingProductId, p_name: els.name.value.trim(), p_price: String(els.price.value),
-          p_image_urls: imageUrls, p_description: els.description.value.trim(),
-          p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
-          p_category_id: els.category.value || null, p_tags: els.tags.value.trim(),
-          p_video_url: finalVideoUrl, p_youtube_url: els.youtube.value.trim() || null,
-          p_is_visible: currentEditingProduct.is_visible, p_is_featured: currentEditingProduct.is_featured,
-          p_stock_quantity: parseInt(els.stock.value) || 0
-        });
-        if (response.error) throw response.error;
-        for (let url of filesToDeleteFromR2) { await deleteFromR2(url); }
-        toast("Product updated successfully! ✓", "success");
-      } else {
-        response = await supabaseClient.rpc("create_product", {
-          p_name: els.name.value.trim(), p_price: String(els.price.value),
-          p_image_urls: imageUrls, p_description: els.description.value.trim(),
-          p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
-          p_category_id: els.category.value || null, p_tags: els.tags.value.trim(),
-          p_video_url: finalVideoUrl, p_youtube_url: els.youtube.value.trim() || null, p_sort_order: 0
-        });
-        if (response.error) throw response.error;
-        toast("Product listed successfully! ✓", "success");
-      }
-      await loadProducts();
-      setTimeout(() => { resetForm(); }, 500);
-    } catch (error) {
-      console.error(error);
-      toast(error.message || "Action failed", "error");
-    } finally {
-      uploading = false; setStatus(false);
+ window.submitProduct = async function () {
+  if (uploading) return;
+  if (!validateForm()) return toast("Please fix the highlighted errors.", "error");
+  uploading = true; setStatus(true, "Initializing...", 5);
+  try {
+    const imageUrls = []; const totalImages = selectedImages.length;
+    for (let i = 0; i < totalImages; i++) {
+      let pct = 5 + ((i / totalImages) * 40);
+      setStatus(true, `Uploading image ${i + 1}/${totalImages}...`, pct);
+      if (selectedImages[i].existing) imageUrls.push(selectedImages[i].url);
+      else imageUrls.push(await uploadFile(selectedImages[i].file));
     }
-  };
 
+    let finalVideoUrl = currentEditingProduct ? currentEditingProduct.video_url : null;
+    const newVideoFile = els.video.files[0];
+
+    if (newVideoFile) {
+      // Validate before anything else
+      const isValid = await validateVideo(newVideoFile);
+      if (!isValid) {
+        uploading = false; setStatus(false);
+        return; // Stop — updateStatus already showed the error
+      }
+
+      setStatus(true, "Uploading video...", 60);
+      if (finalVideoUrl) filesToDeleteFromR2.push(finalVideoUrl);
+      finalVideoUrl = await uploadFile(newVideoFile); // Direct upload, no compression
+    }
+
+    setStatus(true, editingProductId ? "Updating database..." : "Creating product...", 90);
+    let response;
+    if (editingProductId) {
+      response = await supabaseClient.rpc("update_product", {
+        p_id: editingProductId, p_name: els.name.value.trim(), p_price: String(els.price.value),
+        p_image_urls: imageUrls, p_description: els.description.value.trim(),
+        p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
+        p_category_id: els.category.value || null, p_tags: els.tags.value.trim(),
+        p_video_url: finalVideoUrl, p_youtube_url: els.youtube.value.trim() || null,
+        p_is_visible: currentEditingProduct.is_visible, p_is_featured: currentEditingProduct.is_featured,
+        p_stock_quantity: parseInt(els.stock.value) || 0
+      });
+      if (response.error) throw response.error;
+      for (let url of filesToDeleteFromR2) { await deleteFromR2(url); }
+      toast("Product updated successfully! ✓", "success");
+    } else {
+      response = await supabaseClient.rpc("create_product", {
+        p_name: els.name.value.trim(), p_price: String(els.price.value),
+        p_image_urls: imageUrls, p_description: els.description.value.trim(),
+        p_whatsapp_number: els.whatsapp.value.replace(/\s+/g, ''),
+        p_category_id: els.category.value || null, p_tags: els.tags.value.trim(),
+        p_video_url: finalVideoUrl, p_youtube_url: els.youtube.value.trim() || null, p_sort_order: 0
+      });
+      if (response.error) throw response.error;
+      toast("Product listed successfully! ✓", "success");
+    }
+    await loadProducts();
+    setTimeout(() => { resetForm(); }, 500);
+  } catch (error) {
+    console.error(error);
+    toast(error.message || "Action failed", "error");
+  } finally {
+    uploading = false; setStatus(false);
+  }
+};
+ 
   window.toggleVisible = async function (id, current) {
     const { error } = await supabaseClient.from("products").update({ is_visible: !current }).eq("id", id);
     if (error) return toast("Failed to update visibility.", "error");
@@ -1990,10 +2490,486 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateLive();
   await loadCategories();
   await loadProducts();
+
+// ================================================================
+//  SHARED HELPER — tiny toast alias (uses the one already in scope)
+// ================================================================
+// (toast() already exists in the outer DOMContentLoaded scope — no redeclaration)
+
+
+// ================================================================
+//  CATEGORIES TAB
+// ================================================================
+
+const EMOJI_SHORTCUTS = ["👟","📱","🍔","👗","💄","🎮","📸","🏠","🌿","⌚","🎒","🏋️","🍕","💻","🧴","🎁"];
+
+let catEditingId = null;
+let catIconFile  = null;
+let catBadges    = [];          // shared with settings
+let selectedCurrency = "₦";    // settings default
+
+// Render emoji quick-picker inside category modal
+function renderEmojiPicker() {
+  const picker = document.getElementById("emojiPicker");
+  if (!picker) return;
+  picker.innerHTML = "";
+  EMOJI_SHORTCUTS.forEach(em => {
+    const span = document.createElement("span");
+    span.textContent = em;
+    span.style.cssText = "font-size:22px;cursor:pointer;padding:4px;border-radius:8px;transition:transform .15s;";
+    span.title = "Use this icon";
+    span.onmouseenter = () => span.style.transform = "scale(1.25)";
+    span.onmouseleave = () => span.style.transform = "scale(1)";
+    span.onclick = () => {
+      catIconFile = null; // clear any uploaded file
+      document.getElementById("catIconEmoji").textContent = em;
+      // hide img if shown
+      const preview = document.getElementById("catIconPreview");
+      preview.querySelectorAll("img").forEach(i => i.remove());
+      document.getElementById("catIconEmoji").style.display = "";
+    };
+    picker.appendChild(span);
+  });
+}
+
+// Open modal for new / edit
+window.openCatModal = function(id = null, name = "", icon = "") {
+  catEditingId = id;
+  catIconFile  = null;
+  document.getElementById("catNameInput").value = name;
+  document.getElementById("catModalTitle").textContent = id ? "Edit Category" : "New Category";
+  document.getElementById("catModalIcon").textContent  = id ? "✏️" : "➕";
+
+  // reset icon preview
+  const preview = document.getElementById("catIconPreview");
+  preview.querySelectorAll("img").forEach(i => i.remove());
+  const emojiEl = document.getElementById("catIconEmoji");
+  emojiEl.style.display = "";
+
+  if (icon && icon.startsWith("http")) {
+    // existing uploaded image
+    emojiEl.style.display = "none";
+    const img = document.createElement("img");
+    img.src = icon;
+    img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:12px;";
+    preview.appendChild(img);
+  } else {
+    emojiEl.textContent = icon || "🏷️";
+  }
+
+  renderEmojiPicker();
+  document.getElementById("catModal").classList.add("open");
+  setTimeout(() => document.getElementById("catNameInput").focus(), 200);
+};
+
+window.closeCatModal = function() {
+  document.getElementById("catModal").classList.remove("open");
+};
+
+// Close modal on overlay click
+document.getElementById("catModal").addEventListener("click", function(e) {
+  if (e.target === this) window.closeCatModal();
+});
+
+// Icon file picker
+document.getElementById("catIconFile").addEventListener("change", async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  catIconFile = file;
+  const url = URL.createObjectURL(file);
+  const preview = document.getElementById("catIconPreview");
+  preview.querySelectorAll("img").forEach(i => i.remove());
+  document.getElementById("catIconEmoji").style.display = "none";
+  const img = document.createElement("img");
+  img.src = url;
+  img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:12px;";
+  preview.appendChild(img);
+});
+
+// SAVE CATEGORY (create or update)
+window.saveCategory = async function() {
+  const name = document.getElementById("catNameInput").value.trim();
+  if (!name) {
+    document.getElementById("catNameInput").classList.add("input-error","animate-shake");
+    setTimeout(() => document.getElementById("catNameInput").classList.remove("animate-shake"), 400);
+    return toast("Category name is required.", "error");
+  }
+
+  const saveBtn = document.getElementById("catSaveBtn");
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = `<div class="spinner"></div><span>Saving…</span>`;
+
+  try {
+    // Upload icon image if user picked one
+    let iconUrl = null;
+    const emojiText = document.getElementById("catIconEmoji").textContent;
+
+    if (catIconFile) {
+      // reuse existing uploadFile helper already defined above in scope
+      iconUrl = await uploadFile(catIconFile);
+    }
+
+    // Build row data — store icon as text (emoji or url)
+    const iconValue = iconUrl || (emojiText !== "🏷️" ? emojiText : null);
+
+    if (catEditingId) {
+      const updateData = { name };
+      if (iconValue !== null) updateData.icon = iconValue;
+      const { error } = await supabaseClient.from("categories").update(updateData).eq("id", catEditingId);
+      if (error) throw error;
+      toast("Category updated ✓", "success");
+    } else {
+      const insertData = { name };
+      if (iconValue !== null) insertData.icon = iconValue;
+      const { error } = await supabaseClient.from("categories").insert(insertData);
+      if (error) throw error;
+      toast("Category created ✓", "success");
+    }
+
+    window.closeCatModal();
+    await loadCategoriesTab();
+    await loadCategories(); // refresh upload form dropdown too
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Failed to save category.", "error");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = "Save Category";
+  }
+};
+
+// DELETE CATEGORY
+window.deleteCategory = async function(id, name) {
+  if (!confirm(`Delete "${name}"? Products in this category will become uncategorized.`)) return;
+  const { error } = await supabaseClient.from("categories").delete().eq("id", id);
+  if (error) return toast("Failed to delete.", "error");
+  toast("Category deleted.", "success");
+  await loadCategoriesTab();
+  await loadCategories();
+};
+
+// LOAD CATEGORIES TAB
+async function loadCategoriesTab() {
+  const grid = document.getElementById("catGrid");
+  if (!grid) return;
+
+  // skeleton
+  grid.innerHTML = `
+    <div class="cat-pill" style="pointer-events:none;">
+      <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
+      <div class="settings-skel" style="width:70%;height:12px;border-radius:6px;margin-top:4px;"></div>
+    </div>
+    <div class="cat-pill" style="pointer-events:none;">
+      <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
+      <div class="settings-skel" style="width:80%;height:12px;border-radius:6px;margin-top:4px;"></div>
+    </div>
+    <div class="cat-pill" style="pointer-events:none;">
+      <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
+      <div class="settings-skel" style="width:60%;height:12px;border-radius:6px;margin-top:4px;"></div>
+    </div>`;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("categories").select("*").order("name");
+    if (error) throw error;
+
+    grid.innerHTML = "";
+
+    // "Add" card first
+    const addCard = document.createElement("div");
+    addCard.className = "cat-add-card";
+    addCard.onclick = () => window.openCatModal();
+    addCard.innerHTML = `
+      <div class="cat-add-icon">+</div>
+      <span class="cat-add-label">New Category</span>`;
+    grid.appendChild(addCard);
+
+    data.forEach(cat => {
+      const pill = document.createElement("div");
+      pill.className = "cat-pill";
+      pill.dataset.id = cat.id;
+
+      // Icon: emoji or image
+      const iconHtml = cat.icon
+        ? (cat.icon.startsWith("http")
+            ? `<div class="cat-pill-icon"><img src="${cat.icon}" alt="${cat.name}"></div>`
+            : `<div class="cat-pill-icon">${cat.icon}</div>`)
+        : `<div class="cat-pill-icon">🏷️</div>`;
+
+      pill.innerHTML = `
+        ${iconHtml}
+        <div class="cat-pill-name">${cat.name}</div>
+        <div class="cat-pill-actions">
+          <button class="cat-pill-btn cat-edit-btn" onclick="openCatModal('${cat.id}','${cat.name.replace(/'/g,"\\'")}','${(cat.icon||'').replace(/'/g,"\\'")}')">✏️</button>
+          <button class="cat-pill-btn cat-delete-btn" onclick="deleteCategory('${cat.id}','${cat.name.replace(/'/g,"\\'")}')">🗑</button>
+        </div>`;
+      grid.appendChild(pill);
+    });
+
+    // Update count badge
+    const badge = document.getElementById("catCountBadge");
+    if (badge) badge.textContent = `${data.length} categor${data.length === 1 ? "y" : "ies"}`;
+
+    // SortableJS for category reorder
+    if (window._catSortable) window._catSortable.destroy();
+    window._catSortable = Sortable.create(grid, {
+      animation: 150,
+      filter: ".cat-add-card",
+      ghostClass: "sortable-ghost",
+      onEnd: async () => {
+        // Reorder by current DOM order (skip add-card)
+        const pills = [...grid.querySelectorAll(".cat-pill[data-id]")];
+        // no sort_order column on categories — just a visual reorder, no DB update needed
+        // (if you add sort_order later, call a Supabase RPC here)
+        toast("Order saved locally.", "info", 1500);
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    grid.innerHTML = `<p style="color:var(--liyog-red);font-weight:600;padding:16px;">Failed to load categories.</p>`;
+    toast("Failed to load categories.", "error");
+  }
+}
+
+
+// ================================================================
+//  SETTINGS TAB
+// ================================================================
+
+let settingsProfileId = null; // uuid from profile table
+
+// Currency picker
+window.selectCurrency = function(btn) {
+  document.querySelectorAll(".currency-chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  selectedCurrency = btn.dataset.symbol;
+  const label = document.getElementById("selectedCurrencyLabel");
+  if (label) label.textContent = btn.textContent;
+};
+
+// Trust badges
+function renderBadges() {
+  const list = document.getElementById("badgeList");
+  if (!list) return;
+  list.innerHTML = "";
+  catBadges.forEach((badge, i) => {
+    const chip = document.createElement("span");
+    chip.className = "badge-chip";
+    chip.innerHTML = `🛡️ ${badge} <span class="remove-badge" onclick="removeBadge(${i})">×</span>`;
+    list.appendChild(chip);
+  });
+}
+
+window.addBadge = function() {
+  const input = document.getElementById("newBadgeInput");
+  const val = input.value.trim();
+  if (!val) return toast("Type a badge text first.", "info");
+  if (catBadges.length >= 8) return toast("Max 8 badges.", "error");
+  catBadges.push(val);
+  input.value = "";
+  renderBadges();
+};
+
+window.removeBadge = function(i) {
+  catBadges.splice(i, 1);
+  renderBadges();
+};
+
+// Allow Enter on badge input
+document.getElementById("newBadgeInput")?.addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); window.addBadge(); }
+});
+
+// Logo handlers
+document.getElementById("logoFileInput")?.addEventListener("change", async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const url = URL.createObjectURL(file);
+  const previewImg = document.getElementById("logoPreviewImg");
+  const icon       = document.getElementById("logoUploadIcon");
+  if (previewImg && icon) {
+    previewImg.src = url;
+    previewImg.style.display = "block";
+    icon.style.display = "none";
+  }
+  const removeBtn = document.getElementById("removeLogoBtn");
+  if (removeBtn) removeBtn.style.display = "block";
+  // store file reference for save
+  window._pendingLogoFile = file;
+});
+
+window.removeLogo = function() {
+  window._pendingLogoFile = null;
+  window._existingLogoUrl = null;
+  const previewImg = document.getElementById("logoPreviewImg");
+  const icon       = document.getElementById("logoUploadIcon");
+  if (previewImg) { previewImg.src = ""; previewImg.style.display = "none"; }
+  if (icon)        icon.style.display = "";
+  const removeBtn = document.getElementById("removeLogoBtn");
+  if (removeBtn) removeBtn.style.display = "none";
+  document.getElementById("logoFileInput").value = "";
+};
+
+// Logo zone tap
+document.getElementById("logoZone")?.addEventListener("click", function() {
+  document.getElementById("logoFileInput").click();
+});
+
+// LOAD SETTINGS
+async function loadSettings() {
+  const skeleton = document.getElementById("settingsSkeleton");
+  const form     = document.getElementById("settingsForm");
+  if (skeleton) skeleton.style.display = "grid";
+  if (form)     form.style.display     = "none";
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("profile").select("*").limit(1).single();
+
+    if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
+
+    if (data) {
+      settingsProfileId = data.id;
+
+      // Populate fields
+      setVal("st_business_name", data.business_name || "");
+      setVal("st_tagline",       data.tagline        || "");
+      setVal("st_whatsapp",      data.whatsapp_number|| "");
+      setVal("st_bio",           data.bio            || "");
+      setVal("st_wa_message",    data.wa_message     || "Hi, I want to buy [Product Name]");
+      setVal("st_response_time", data.response_time  || "");
+      setVal("st_delivery_info", data.delivery_info  || "");
+
+      // Currency
+      const storedCurrency = data.currency_symbol || "₦";
+      selectedCurrency = storedCurrency;
+      document.querySelectorAll(".currency-chip").forEach(c => {
+        if (c.dataset.symbol === storedCurrency) {
+          c.classList.add("active");
+          const label = document.getElementById("selectedCurrencyLabel");
+          if (label) label.textContent = c.textContent;
+        }
+      });
+
+      // Badges
+      catBadges = Array.isArray(data.trust_badges) ? data.trust_badges : [];
+      renderBadges();
+
+      // Logo
+      if (data.logo_url) {
+        window._existingLogoUrl = data.logo_url;
+        const previewImg = document.getElementById("logoPreviewImg");
+        const icon       = document.getElementById("logoUploadIcon");
+        const removeBtn  = document.getElementById("removeLogoBtn");
+        if (previewImg) { previewImg.src = data.logo_url; previewImg.style.display = "block"; }
+        if (icon)        icon.style.display = "none";
+        if (removeBtn)   removeBtn.style.display = "block";
+      }
+    }
+
+    if (skeleton) skeleton.style.display = "none";
+    if (form)     form.style.display     = "block";
+
+  } catch (err) {
+    console.error(err);
+    if (skeleton) skeleton.style.display = "none";
+    if (form)     form.style.display     = "block"; // show blank form anyway
+    toast("Could not load settings — showing blank form.", "info");
+  }
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+// SAVE SETTINGS
+window.saveSettings = async function() {
+  const btn = document.getElementById("saveSettingsBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div><span>Saving…</span>`;
+
+  try {
+    // Upload logo if a new file was picked
+    let logoUrl = window._existingLogoUrl || null;
+    if (window._pendingLogoFile) {
+      logoUrl = await uploadFile(window._pendingLogoFile);
+      window._existingLogoUrl = logoUrl;
+      window._pendingLogoFile = null;
+    }
+
+    const payload = {
+      business_name:   getVal("st_business_name"),
+      tagline:         getVal("st_tagline"),
+      whatsapp_number: getVal("st_whatsapp").replace(/\s+/g,""),
+      bio:             getVal("st_bio"),
+      wa_message:      getVal("st_wa_message"),
+      response_time:   getVal("st_response_time"),
+      delivery_info:   getVal("st_delivery_info"),
+      currency_symbol: selectedCurrency,
+      trust_badges:    catBadges,
+      logo_url:        logoUrl
+    };
+
+    let error;
+    if (settingsProfileId) {
+      // UPDATE existing row
+      ({ error } = await supabaseClient.from("profile").update(payload).eq("id", settingsProfileId));
+    } else {
+      // INSERT first-time row
+      const { data: inserted, error: insertErr } = await supabaseClient
+        .from("profile").insert(payload).select().single();
+      error = insertErr;
+      if (inserted) settingsProfileId = inserted.id;
+    }
+
+    if (error) throw error;
+
+    // Show saved tag
+    const savedTag = document.getElementById("settingsSavedTag");
+    if (savedTag) {
+      savedTag.classList.add("show");
+      setTimeout(() => savedTag.classList.remove("show"), 3000);
+    }
+    toast("Settings saved ✓", "success");
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Failed to save settings.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Save All Settings";
+  }
+};
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : "";
+}
+
+// ================================================================
+//  TAB ACTIVATION HOOKS — load data when tabs are first opened
+// ================================================================
+let _catLoaded      = false;
+let _settingsLoaded = false;
+
+// Patch the existing tab switcher to trigger lazy-loads
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const tab = btn.dataset.tab;
+    if (tab === "categoriesTab" && !_catLoaded) {
+      _catLoaded = true;
+      await loadCategoriesTab();
+    }
+    if (tab === "settingsTab" && !_settingsLoaded) {
+      _settingsLoaded = true;
+      await loadSettings();
+    }
+  });
+});
 });
 </script>
 
 <script src="https://bartoos-1.github.io/store/global-error.js"></script>
 </body>
 </html>
-
