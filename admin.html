@@ -2135,14 +2135,21 @@ function validateVideo(file) {
 
   
   async function deleteFromR2(url) {
-    try {
-      const fileKey = new URL(url).pathname.substring(1);
-      await fetch(`${supabaseUrl}/functions/v1/delete-r2-file`, {
-        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
-        body: JSON.stringify({ fileKey })
-      });
-    } catch (e) { console.error("R2 Cleanup error", e); }
+  try {
+    const fileKey = url.replace("https://pub-0fc5736899f3449d987d356eafdca873.r2.dev/", "");
+
+    await fetch(`${supabaseUrl}/functions/v1/delete-r2-file`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ fileKey })
+    });
+  } catch (err) {
+    console.error("R2 Cleanup error", err);
   }
+}
 
   function setStatus(loading, text = "", progress = 0) {
     if (loading) {
