@@ -1848,7 +1848,7 @@
       </button>
     </div>
 
-  </div><!-- /#settingsForm -->
+  </div> <!-- /#settingsForm -->
 
 </div> 
 
@@ -1987,7 +1987,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function updateLive() {
     els.liveName.textContent = els.name.value.trim() || "Product Name";
     const rawPrice = els.price.value;
-    els.livePrice.textContent = rawPrice ? `₦${Number(rawPrice).toLocaleString()}` : "₦0";
+    els.livePrice.textContent = rawPrice ? `${Number(rawPrice).toLocaleString()}` : "0";
     els.liveDesc.textContent = els.description.value.trim() || "Description preview will appear here...";
     if (selectedImages.length > 0) {
       els.liveImage.src = selectedImages[0].url;
@@ -2137,8 +2137,7 @@ function validateVideo(file) {
   async function deleteFromR2(url) {
   try {
     const fileKey = url.replace("https://pub-0fc5736899f3449d987d356eafdca873.r2.dev/", "");
-
-    await fetch(`${supabaseUrl}/functions/v1/delete-r2-file`, {
+    const res = await fetch(`${supabaseUrl}/functions/v1/delete-r2-file`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -2146,10 +2145,14 @@ function validateVideo(file) {
       },
       body: JSON.stringify({ fileKey })
     });
+    if (!res.ok) throw new Error("Store delete failed");
+    return true;
   } catch (err) {
-    console.error("R2 Cleanup error", err);
+    console.error("Store Cleanup error", err);
+    return false; // Return false if R2 delete failed
   }
 }
+
 
   function setStatus(loading, text = "", progress = 0) {
     if (loading) {
@@ -2276,7 +2279,7 @@ function validateVideo(file) {
       finalVideoUrl = await uploadFile(newVideoFile); // Direct upload, no compression
     }
 
-    setStatus(true, editingProductId ? "Updating database..." : "Creating product...", 90);
+    setStatus(true, editingProductId ? "Updating Product Details..." : "Creating product...", 90);
     let response;
     if (editingProductId) {
       response = await supabaseClient.rpc("update_product", {
@@ -2322,15 +2325,36 @@ function validateVideo(file) {
     if (error) return toast("Failed to update featured.", "error");
     loadProducts();
   };
+
   window.deleteProduct = async function (id) {
-    if (!confirm("Delete this product permanently?")) return;
-    const { data, error } = await supabaseClient.rpc("delete_product_full", { p_id: id });
-    if (error) return toast("Delete failed.", "error");
-    const files = [...(data.images || []), data.video].filter(Boolean);
-    for (const url of files) await deleteFromR2(url);
-    toast("Product deleted.", "success");
-    loadProducts();
-  };
+  if (!confirm("Delete this product permanently?")) return;
+
+  // Step 1: Fetch file URLs first without deleting Supabase yet
+  const { data: product, error: fetchError } = await supabaseClient
+    .from("products")
+    .select("image_urls, video_url")
+    .eq("id", id)
+    .single();
+
+  if (fetchError) return toast("Delete failed.", "error");
+
+  // Step 2: Delete all files from R2 first
+  const files = [...(product.image_urls || []), product.video_url].filter(Boolean);
+  const r2Results = await Promise.all(files.map(url => deleteFromR2(url)));
+  const allR2Deleted = r2Results.every(result => result === true);
+
+  if (!allR2Deleted) {
+    // R2 failed — Supabase record still safe, user can retry
+    return toast("Delete failed. Please try again.", "error");
+  }
+
+  // Step 3: Only delete from Supabase AFTER R2 is confirmed deleted
+  const { error } = await supabaseClient.rpc("delete_product_full", { p_id: id });
+  if (error) return toast("Files deleted but database error. Contact support.", "error");
+
+  toast("Product deleted. ✓", "success");
+  loadProducts();
+};
 
   // LOAD PRODUCTS
   async function loadProducts() {
@@ -2373,7 +2397,7 @@ function validateVideo(file) {
         <td><img src="${imgUrl}" class="product-thumb" alt="${product.name}"></td>
         <td>
           <div class="prod-name">${product.name || "Unnamed"}</div>
-          <div class="prod-price">₦${priceFmt}</div>
+          <div class="prod-price">${priceFmt}</div>
           <div class="prod-meta">${catName} · Stock: ${product.stock_quantity || 0}</div>
         </td>
         <td>
@@ -2401,15 +2425,15 @@ function validateVideo(file) {
           <img src="${imgUrl}" class="mobile-card-img" alt="${product.name}">
           <div class="mobile-card-info">
             <div class="mobile-card-name">${product.name || "Unnamed"}</div>
-            <div class="mobile-card-price">₦${priceFmt}</div>
+            <div class="mobile-card-price">${priceFmt}</div>
             <div class="mobile-card-cat">${catName}</div>
             <div class="mobile-card-stock">Stock: ${product.stock_quantity || 0}</div>
           </div>
         </div>
         <div class="mobile-card-footer">
           <div class="mobile-card-toggles">
-            <button class="toggle-btn ${product.is_visible ? 'active' : ''}" onclick="toggleVisible('${product.id}', ${product.is_visible})">👁 Vis</button>
-            <button class="toggle-btn ${product.is_featured ? 'featured' : ''}" onclick="toggleFeatured('${product.id}', ${product.is_featured})">⭐ Feat</button>
+            <button class="toggle-btn ${product.is_visible ? 'active' : ''}" onclick="toggleVisible('${product.id}', ${product.is_visible})">👁 Visible</button>
+            <button class="toggle-btn ${product.is_featured ? 'featured' : ''}" onclick="toggleFeatured('${product.id}', ${product.is_featured})">⭐ Featured</button>
           </div>
           <div class="mobile-card-actions">
             <button class="action-btn edit-btn" onclick="editProduct('${product.id}')">✏️</button>
@@ -2453,7 +2477,7 @@ function validateVideo(file) {
   // EDIT PRODUCT
   window.editProduct = async function (id) {
     resetForm();
-    toast("Loading product data...", "info", 2000);
+    toast("Loading product details...", "info", 2000);
     const { data, error } = await supabaseClient.from("products").select("*").eq("id", id).single();
     if (error) return toast("Failed to load product.", "error");
 
