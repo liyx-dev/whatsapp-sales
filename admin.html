@@ -15,6 +15,12 @@
         id="mainStylesheet"
         onerror="document.getElementById('offlineBanner').style.display='flex'">
 
+<!-- DOMPurify for HTML sanitization -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<!-- Quill editor -->
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
@@ -1180,7 +1186,42 @@
 .cat-icon-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-bottom: 16px; }
 .cat-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-/* ── SETTINGS TAB ───────────────────────────────── */
+/* ================================================================
+   SETTINGS TAB — COMPLETE CSS UPGRADE
+   Add inside your <style> tag, replacing old settings CSS
+================================================================ */
+
+/* ── RELOAD BUTTON ─────────────────────────────── */
+.st-reload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--surface-soft);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.st-reload-btn:hover {
+  border-color: var(--liyog-green);
+  color: var(--liyog-green);
+  background: rgba(40,164,40,0.04);
+}
+.st-reload-btn.spinning #reloadIcon,
+.st-reload-btn.spinning span:first-child {
+  display: inline-block;
+  animation: st-spin 0.7s linear infinite;
+}
+@keyframes st-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── SETTINGS GRID ─────────────────────────────── */
 .settings-grid {
   display: grid;
   gap: 20px;
@@ -1189,135 +1230,400 @@
   .settings-grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* ── SETTINGS CARD ─────────────────────────────── */
 .settings-card {
-  background: var(--surface-card);
-  border-radius: var(--radius-xl);
-  border: 1.5px solid var(--border-subtle);
+  background: var(--surface-card, #fff);
+  border-radius: 18px;
+  border: 1.5px solid var(--border-subtle, #e2e8f0);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   transition: box-shadow 0.2s;
 }
-.settings-card:hover { box-shadow: var(--shadow-md); }
+.settings-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+
 .settings-card-header {
-  padding: 18px 20px 16px;
-  border-bottom: 1.5px solid var(--border-subtle);
-  display: flex; align-items: center; gap: 12px;
-  background: linear-gradient(135deg, var(--surface-soft), #fff);
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--border-subtle, #e2e8f0);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--surface-soft, #f8fafc), #fff);
 }
 .settings-card-icon {
   width: 40px; height: 40px;
   border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
 }
 .settings-card-title {
-  font-family: var(--font-display);
-  font-weight: 700; font-size: 15px;
-  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary, #1e293b);
 }
-.settings-card-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-.settings-card-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.settings-card-sub {
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 2px;
+}
+.settings-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
-/* Logo upload area */
-.logo-upload-zone {
-  width: 100%; aspect-ratio: 16/7;
-  border-radius: var(--radius-lg);
-  border: 2px dashed var(--border-subtle);
-  background: var(--surface-soft);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 10px; cursor: pointer;
+/* Full-width card */
+.st-full { grid-column: 1 / -1; }
+
+/* ── FIELD LOCKS ───────────────────────────────── */
+/* Prevent HTML injection — strip tags visually */
+.st-text-field {
+  font-family: var(--font-sans, "Inter", sans-serif);
+}
+/* URL fields — plain text only */
+.st-url-field {
+  font-size: 13px;
+}
+
+/* ── HINTS & OPTIONAL ──────────────────────────── */
+.st-hint {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.st-optional {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  background: var(--surface-soft, #f1f5f9);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── LOGO UPLOAD ZONE ──────────────────────────── */
+.st-upload-zone {
+  width: 100%;
+  aspect-ratio: 16/7;
+  border-radius: 14px;
+  border: 2px dashed var(--border-subtle, #e2e8f0);
+  background: var(--surface-soft, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   transition: all 0.22s;
   overflow: hidden;
   position: relative;
 }
-.logo-upload-zone:hover { border-color: var(--liyog-green); background: rgba(40,164,40,0.03); }
-.logo-upload-zone img {
-  width: 100%; height: 100%;
-  object-fit: contain;
-  padding: 8px;
+.st-upload-zone:hover {
+  border-color: var(--liyog-green, #28A428);
+  background: rgba(40,164,40,0.03);
 }
-.logo-upload-hint { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-.logo-upload-sub  { font-size: 11px; color: var(--text-muted); }
+.st-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.logo-upload-hint { font-size: 13px; color: var(--text-muted, #94a3b8); font-weight: 600; }
+.logo-upload-sub  { font-size: 11px; color: var(--text-muted, #94a3b8); }
 
-/* Save settings button */
-.settings-save-bar {
-  background: linear-gradient(135deg, var(--surface-card), var(--surface-soft));
-  border-top: 1.5px solid var(--border-subtle);
-  padding: 18px 0 0;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; flex-wrap: wrap;
-  margin-top: 4px;
+.st-remove-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,59,48,0.2);
+  background: rgba(255,59,48,0.04);
+  color: var(--liyog-red, #FF3B30);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
 }
-.settings-saved-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 13px; font-weight: 700;
-  color: var(--liyog-green);
-  opacity: 0; transition: opacity 0.3s;
+.st-remove-btn:hover {
+  background: rgba(255,59,48,0.1);
+  border-color: rgba(255,59,48,0.4);
 }
-.settings-saved-tag.show { opacity: 1; }
 
-/* Currency selector */
+/* ── QUILL EDITOR ──────────────────────────────── */
+.st-quill-wrapper {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.st-quill-wrapper:focus-within {
+  border-color: var(--liyog-green, #28A428);
+  box-shadow: 0 0 0 3px rgba(40,164,40,0.12);
+}
+/* Quill toolbar style override */
+.st-quill-wrapper .ql-toolbar {
+  border: none;
+  border-bottom: 1.5px solid #e2e8f0;
+  background: var(--surface-soft, #f8fafc);
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+.st-quill-wrapper .ql-container {
+  border: none;
+  font-family: var(--font-sans, "Inter", sans-serif);
+  font-size: 14px;
+  min-height: 140px;
+}
+.st-quill-wrapper .ql-editor {
+  min-height: 140px;
+  padding: 14px 16px;
+  color: var(--text-primary, #1e293b);
+  line-height: 1.7;
+}
+.st-quill-wrapper .ql-editor.ql-blank::before {
+  color: var(--text-muted, #94a3b8);
+  font-style: normal;
+  font-size: 14px;
+}
+
+/* ── SOCIAL LINKS ──────────────────────────────── */
+.st-social-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.st-social-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.st-social-row .input-premium {
+  flex: 1;
+  font-size: 13px;
+}
+
+/* ── CURRENCY ──────────────────────────────────── */
 .currency-options {
-  display: flex; gap: 8px; flex-wrap: wrap;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .currency-chip {
   padding: 7px 16px;
   border-radius: 50px;
-  border: 1.5px solid var(--border-subtle);
-  background: var(--surface-soft);
-  font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: all 0.18s;
-  font-family: var(--font-body);
-  color: var(--text-secondary);
+  border: 1.5px solid var(--border-subtle, #e2e8f0);
+  background: var(--surface-soft, #f8fafc);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--text-secondary, #64748b);
 }
 .currency-chip.active {
-  background: linear-gradient(135deg, var(--liyog-green), var(--liyog-green-dark));
-  color: #fff; border-color: transparent;
+  background: linear-gradient(135deg, #28A428, #228B22);
+  color: #fff;
+  border-color: transparent;
   box-shadow: 0 4px 12px rgba(40,164,40,0.3);
 }
-.currency-chip:hover:not(.active) { border-color: var(--liyog-green); color: var(--liyog-green); }
+.currency-chip:hover:not(.active) {
+  border-color: var(--liyog-green, #28A428);
+  color: var(--liyog-green, #28A428);
+}
 
-/* Trust badge chips */
-.badge-list { display: flex; flex-wrap: wrap; gap: 8px; }
+/* ── TRUST BADGES ──────────────────────────────── */
+.badge-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 10px; }
 .badge-chip {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: linear-gradient(135deg, rgba(40,164,40,0.08), rgba(24,119,242,0.06));
   border: 1.5px solid rgba(40,164,40,0.2);
   border-radius: 50px;
   padding: 6px 14px;
-  font-size: 12px; font-weight: 700;
-  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
   cursor: default;
 }
 .badge-chip .remove-badge {
-  cursor: pointer; color: var(--text-muted);
-  font-size: 14px; line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted, #94a3b8);
+  font-size: 15px;
+  line-height: 1;
   transition: color 0.15s;
 }
-.badge-chip .remove-badge:hover { color: var(--liyog-red); }
+.badge-chip .remove-badge:hover { color: #FF3B30; }
 .badge-add-row { display: flex; gap: 8px; align-items: center; }
 
-/* Settings skeleton */
+/* ── STORE PHOTOS GRID ─────────────────────────── */
+.st-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+.st-photo-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-subtle, #e2e8f0);
+  background: var(--surface-soft, #f8fafc);
+}
+.st-photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.st-photo-item .st-photo-remove {
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  line-height: 1;
+}
+.st-photo-item .st-photo-remove:hover { background: #FF3B30; }
+
+/* ── DOCS GRID ─────────────────────────────────── */
+.st-docs-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.st-doc-item {
+  position: relative;
+  width: 110px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-subtle, #e2e8f0);
+  background: var(--surface-soft, #f8fafc);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px 8px;
+  gap: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.18s;
+}
+.st-doc-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.st-doc-item img {
+  width: 100%;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.st-doc-item .st-doc-icon {
+  font-size: 30px;
+}
+.st-doc-item .st-doc-label {
+  font-size: 10px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+  text-align: center;
+  word-break: break-all;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-doc-item .st-photo-remove {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.st-doc-item .st-photo-remove:hover { background: #FF3B30; }
+
+/* ── ADD MEDIA BUTTON ──────────────────────────── */
+.st-add-media-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 2px dashed var(--border-subtle, #e2e8f0);
+  background: var(--surface-soft, #f8fafc);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  transition: all 0.2s;
+  width: fit-content;
+}
+.st-add-media-btn:hover {
+  border-color: var(--liyog-green, #28A428);
+  color: var(--liyog-green, #28A428);
+  background: rgba(40,164,40,0.03);
+}
+.st-add-media-btn.hidden { display: none; }
+
+/* ── SAVE BAR ──────────────────────────────────── */
+.settings-save-bar {
+  background: linear-gradient(135deg, var(--surface-card, #fff), var(--surface-soft, #f8fafc));
+  border-top: 1.5px solid var(--border-subtle, #e2e8f0);
+  padding: 18px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.settings-saved-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--liyog-green, #28A428);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.settings-saved-tag.show { opacity: 1; }
+
+/* ── SKELETON ──────────────────────────────────── */
 .settings-skel {
   background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 10px;
 }
-
-/* Full-width settings card */
-.settings-card.full { grid-column: 1 / -1; }
-
-/* Danger zone */
-.danger-zone-card {
-  border-color: rgba(255,59,48,0.2) !important;
-  background: rgba(255,59,48,0.02);
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
-.danger-zone-card .settings-card-header {
-  background: linear-gradient(135deg, rgba(255,59,48,0.04), rgba(255,59,48,0.02));
-}
+
 </style>
 
 </head>
@@ -1681,33 +1987,51 @@
 </div><!-- /#categoriesTab -->
 
   <!-- ================================================
-       SETTINGS TAB
-  ================================================= -->
- <div id="settingsTab" class="admin-section">
+     SETTINGS TAB — COMPLETE UPGRADE
+     Drop this in place of your existing #settingsTab div
+================================================= -->
+<div id="settingsTab" class="admin-section">
 
-  <div style="margin-bottom:22px;">
-    <h2 class="section-title">⚙️ Store Settings</h2>
-    <p class="section-subtitle">Configure your global store profile — used across UK, CA, ZA &amp; Nigeria</p>
+  <!-- HEADER ROW -->
+  <div style="margin-bottom:22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <div>
+      <h2 class="section-title">⚙️ Store Settings</h2>
+      <p class="section-subtitle">Configure your global store profile — used across UK, CA, ZA &amp; Nigeria</p>
+    </div>
+    <!-- RELOAD BUTTON -->
+    <button class="st-reload-btn" onclick="loadSettings()" title="Reload settings">
+      <span id="reloadIcon">🔃</span> Reload
+    </button>
   </div>
 
-  <!-- SKELETON (hidden once loaded) -->
+  <!-- SKELETON -->
   <div id="settingsSkeleton" class="settings-grid" style="margin-bottom:0;">
     <div class="settings-card"><div class="settings-card-body" style="gap:10px;">
       <div class="settings-skel" style="height:16px;width:60%;"></div>
       <div class="settings-skel" style="height:44px;width:100%;"></div>
       <div class="settings-skel" style="height:44px;width:100%;"></div>
+      <div class="settings-skel" style="height:44px;width:100%;"></div>
     </div></div>
     <div class="settings-card"><div class="settings-card-body" style="gap:10px;">
       <div class="settings-skel" style="height:16px;width:40%;"></div>
-      <div class="settings-skel" style="height:80px;width:100%;border-radius:var(--radius-lg);"></div>
+      <div class="settings-skel" style="height:120px;width:100%;border-radius:var(--radius-lg);"></div>
+    </div></div>
+    <div class="settings-card"><div class="settings-card-body" style="gap:10px;">
+      <div class="settings-skel" style="height:16px;width:50%;"></div>
+      <div class="settings-skel" style="height:44px;width:100%;"></div>
+      <div class="settings-skel" style="height:44px;width:100%;"></div>
+    </div></div>
+    <div class="settings-card"><div class="settings-card-body" style="gap:10px;">
+      <div class="settings-skel" style="height:16px;width:45%;"></div>
+      <div class="settings-skel" style="height:80px;width:100%;"></div>
     </div></div>
   </div>
 
-  <!-- REAL SETTINGS (shown once loaded) -->
+  <!-- REAL FORM -->
   <div id="settingsForm" style="display:none;">
     <div class="settings-grid">
 
-      <!-- 1 ── BUSINESS IDENTITY -->
+      <!-- 1. BUSINESS IDENTITY -->
       <div class="settings-card">
         <div class="settings-card-header">
           <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">🏪</div>
@@ -1719,46 +2043,121 @@
         <div class="settings-card-body">
           <div>
             <label class="form-label">Store / Business Name</label>
-            <input type="text" id="st_business_name" class="input-premium" placeholder="e.g. Liyog Premium Store">
+            <input type="text" id="st_business_name" class="input-premium st-text-field" placeholder="e.g. Liyog Premium Store" maxlength="100" autocomplete="off">
           </div>
           <div>
             <label class="form-label">Tagline</label>
-            <input type="text" id="st_tagline" class="input-premium" placeholder="e.g. Quality you can trust">
+            <input type="text" id="st_tagline" class="input-premium st-text-field" placeholder="e.g. Quality you can trust" maxlength="120" autocomplete="off">
           </div>
           <div>
             <label class="form-label">WhatsApp Number</label>
-            <input type="tel" id="st_whatsapp" class="input-premium" placeholder="e.g. 447911123456">
-            <p style="font-size:11px;color:var(--text-muted);margin-top:5px;">Include country code — no + or spaces (UK: 44, CA: 1, ZA: 27, NG: 234)</p>
+            <input type="tel" id="st_whatsapp" class="input-premium st-text-field" placeholder="e.g. 447911123456" maxlength="20" autocomplete="off" pattern="[0-9]{7,20}">
+            <p class="st-hint">Include country code — no + or spaces (UK: 44, CA: 1, ZA: 27, NG: 234)</p>
           </div>
           <div>
-            <label class="form-label">Store Bio / Description</label>
-            <textarea id="st_bio" class="input-premium" style="min-height:90px;resize:vertical;" placeholder="Tell customers about your store..."></textarea>
+            <label class="form-label">Phone Number <span class="st-optional">optional</span></label>
+            <input type="tel" id="st_phone" class="input-premium st-text-field" placeholder="e.g. +234 812 345 6789" maxlength="25" autocomplete="off">
+          </div>
+          <div>
+            <label class="form-label">Business Type <span class="st-optional">optional</span></label>
+            <select id="st_business_type" class="input-premium">
+              <option value="">Select type...</option>
+              <option value="Sole Trader">Sole Trader</option>
+              <option value="LLC">LLC / Limited</option>
+              <option value="Partnership">Partnership</option>
+              <option value="Corporation">Corporation</option>
+              <option value="Non-profit">Non-profit</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Year Established <span class="st-optional">optional</span></label>
+            <input type="text" id="st_year_est" class="input-premium st-text-field" placeholder="e.g. 2019" maxlength="4" pattern="[0-9]{4}" autocomplete="off">
           </div>
         </div>
       </div>
 
-      <!-- 2 ── LOGO -->
+      <!-- 2. LOGO -->
       <div class="settings-card">
         <div class="settings-card-header">
           <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(24,119,242,.1),rgba(24,119,242,.06));">🖼️</div>
           <div>
             <div class="settings-card-title">Store Logo</div>
-            <div class="settings-card-sub">Appears on your storefront &amp; receipts</div>
+            <div class="settings-card-sub">Appears on storefront &amp; receipts</div>
           </div>
         </div>
         <div class="settings-card-body">
-          <div class="logo-upload-zone" id="logoZone" onclick="document.getElementById('logoFileInput').click()">
-            <img id="logoPreviewImg" src="" alt="logo" style="display:none;">
-            <span id="logoUploadIcon" style="font-size:32px;">🏪</span>
-            <p class="logo-upload-hint">Tap to upload logo</p>
-            <p class="logo-upload-sub">PNG, JPG, WEBP · recommended 400×400</p>
+          <div class="st-upload-zone" id="logoZone">
+            <img id="logoPreviewImg" src="" alt="logo" style="display:none; width:100%; height:100%; object-fit:contain; padding:8px; border-radius:12px;">
+            <div id="logoPlaceholder" class="st-upload-placeholder">
+              <span style="font-size:36px;">🏪</span>
+              <p class="logo-upload-hint">Tap to upload logo</p>
+              <p class="logo-upload-sub">PNG, JPG, WEBP · 400×400 recommended</p>
+            </div>
+            <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" aria-label="Upload logo">
           </div>
-          <input type="file" id="logoFileInput" accept="image/*" style="display:none;">
-          <button class="btn-ghost w-full" id="removeLogoBtn" style="display:none;font-size:13px;" onclick="removeLogo()">✕ Remove Logo</button>
+          <div id="logoActions" style="display:none; gap:8px; display:none;">
+            <button class="st-remove-btn" onclick="removeLogo()">✕ Remove Logo</button>
+          </div>
         </div>
       </div>
 
-      <!-- 3 ── WHATSAPP MESSAGE -->
+      <!-- 3. STORE BIO (QUILL) -->
+      <div class="settings-card st-full">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">📝</div>
+          <div>
+            <div class="settings-card-title">Store Bio / Description</div>
+            <div class="settings-card-sub">Rich text — supports formatting, links &amp; lists</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div class="st-quill-wrapper">
+            <div id="st_bio_editor"></div>
+          </div>
+          <p class="st-hint">Use formatting to make your bio stand out on your store page.</p>
+        </div>
+      </div>
+
+      <!-- 4. LOCATION -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(255,122,0,.1),rgba(255,122,0,.06));">📍</div>
+          <div>
+            <div class="settings-card-title">Store Location</div>
+            <div class="settings-card-sub">Visible to customers on your profile</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div>
+            <label class="form-label">Street Address <span class="st-optional">optional</span></label>
+            <input type="text" id="st_address" class="input-premium st-text-field" placeholder="e.g. 12 Market Street" maxlength="150" autocomplete="off">
+          </div>
+          <div>
+            <label class="form-label">City</label>
+            <input type="text" id="st_city" class="input-premium st-text-field" placeholder="e.g. Lagos / London" maxlength="80" autocomplete="off">
+          </div>
+          <div>
+            <label class="form-label">Country</label>
+            <select id="st_country" class="input-premium">
+              <option value="">Select country...</option>
+              <option value="Nigeria">🇳🇬 Nigeria</option>
+              <option value="United Kingdom">🇬🇧 United Kingdom</option>
+              <option value="Canada">🇨🇦 Canada</option>
+              <option value="South Africa">🇿🇦 South Africa</option>
+              <option value="Ghana">🇬🇭 Ghana</option>
+              <option value="United States">🇺🇸 United States</option>
+              <option value="Other">🌍 Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Return Policy <span class="st-optional">optional</span></label>
+            <textarea id="st_return_policy" class="input-premium st-text-field" style="min-height:70px;resize:vertical;" placeholder="e.g. 7-day returns on all items..." maxlength="500"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. WHATSAPP MESSAGE -->
       <div class="settings-card">
         <div class="settings-card-header">
           <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">💬</div>
@@ -1770,35 +2169,59 @@
         <div class="settings-card-body">
           <div>
             <label class="form-label">Default Message Template</label>
-            <textarea id="st_wa_message" class="input-premium" style="min-height:80px;resize:vertical;" placeholder="Hi, I want to buy [Product Name]"></textarea>
-            <p style="font-size:11px;color:var(--text-muted);margin-top:5px;">Use <strong>[Product Name]</strong> and <strong>[Price]</strong> as placeholders — they auto-fill.</p>
+            <textarea id="st_wa_message" class="input-premium st-text-field" style="min-height:80px;resize:vertical;" placeholder="Hi, I want to buy [Product Name]" maxlength="500"></textarea>
+            <p class="st-hint">Use <strong>[Product Name]</strong> and <strong>[Price]</strong> as placeholders.</p>
           </div>
           <div>
             <label class="form-label">Response Time Text</label>
-            <input type="text" id="st_response_time" class="input-premium" placeholder="e.g. Usually replies within 1 hour">
+            <input type="text" id="st_response_time" class="input-premium st-text-field" placeholder="e.g. Usually replies within 1 hour" maxlength="80" autocomplete="off">
+          </div>
+          <div>
+            <label class="form-label">Delivery Info</label>
+            <textarea id="st_delivery_info" class="input-premium st-text-field" style="min-height:80px;resize:vertical;" placeholder="e.g. Free delivery on orders over £50. 2–5 business days." maxlength="500"></textarea>
           </div>
         </div>
       </div>
 
-      <!-- 4 ── DELIVERY & SHIPPING -->
+      <!-- 6. SOCIAL LINKS -->
       <div class="settings-card">
         <div class="settings-card-header">
-          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(255,122,0,.1),rgba(255,122,0,.06));">🚚</div>
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(24,119,242,.1),rgba(24,119,242,.06));">🔗</div>
           <div>
-            <div class="settings-card-title">Delivery &amp; Shipping</div>
-            <div class="settings-card-sub">Visible to all customers on checkout</div>
+            <div class="settings-card-title">Social Links</div>
+            <div class="settings-card-sub">All optional — shown on your store profile</div>
           </div>
         </div>
         <div class="settings-card-body">
-          <div>
-            <label class="form-label">Delivery Info</label>
-            <textarea id="st_delivery_info" class="input-premium" style="min-height:80px;resize:vertical;" placeholder="e.g. Free delivery on orders over £50. 2–5 business days UK. Shipping to CA, ZA &amp; NG available."></textarea>
+          <div class="st-social-row">
+            <span class="st-social-icon" style="background:#1877F2;">f</span>
+            <input type="url" id="st_facebook" class="input-premium st-url-field" placeholder="https://facebook.com/yourpage">
+          </div>
+          <div class="st-social-row">
+            <span class="st-social-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);">📷</span>
+            <input type="url" id="st_instagram" class="input-premium st-url-field" placeholder="https://instagram.com/yourhandle">
+          </div>
+          <div class="st-social-row">
+            <span class="st-social-icon" style="background:#000;">𝕏</span>
+            <input type="url" id="st_twitter" class="input-premium st-url-field" placeholder="https://x.com/yourhandle">
+          </div>
+          <div class="st-social-row">
+            <span class="st-social-icon" style="background:#ff0050;">♪</span>
+            <input type="url" id="st_tiktok" class="input-premium st-url-field" placeholder="https://tiktok.com/@yourhandle">
+          </div>
+          <div class="st-social-row">
+            <span class="st-social-icon" style="background:#FF0000;">▶</span>
+            <input type="url" id="st_youtube" class="input-premium st-url-field" placeholder="https://youtube.com/@yourchannel">
+          </div>
+          <div class="st-social-row">
+            <span class="st-social-icon" style="background:#28A428;">🌐</span>
+            <input type="url" id="st_website" class="input-premium st-url-field" placeholder="https://yourwebsite.com">
           </div>
         </div>
       </div>
 
-      <!-- 5 ── CURRENCY (full width) -->
-      <div class="settings-card full">
+      <!-- 7. CURRENCY (full width) -->
+      <div class="settings-card st-full">
         <div class="settings-card-header">
           <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(255,215,0,.18),rgba(255,215,0,.08));">💱</div>
           <div>
@@ -1819,8 +2242,8 @@
         </div>
       </div>
 
-      <!-- 6 ── TRUST BADGES (full width) -->
-      <div class="settings-card full">
+      <!-- 8. TRUST BADGES (full width) -->
+      <div class="settings-card st-full">
         <div class="settings-card-header">
           <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(40,164,40,.12),rgba(52,191,73,.08));">🛡️</div>
           <div>
@@ -1831,10 +2254,55 @@
         <div class="settings-card-body">
           <div class="badge-list" id="badgeList"></div>
           <div class="badge-add-row">
-            <input type="text" id="newBadgeInput" class="input-premium" placeholder="e.g. Secure Checkout, 30-Day Returns" style="flex:1;">
+            <input type="text" id="newBadgeInput" class="input-premium st-text-field" placeholder="e.g. Secure Checkout, 30-Day Returns" style="flex:1;" maxlength="60">
             <button class="btn-primary" onclick="addBadge()" style="padding:10px 18px;flex-shrink:0;">+ Add</button>
           </div>
-          <p style="font-size:11px;color:var(--text-muted);">Press + to add. Click × on a badge to remove it.</p>
+          <p class="st-hint">Press + to add. Click × on a badge to remove it. Max 8.</p>
+        </div>
+      </div>
+
+      <!-- 9. STORE PHOTOS (full width) -->
+      <div class="settings-card st-full">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(24,119,242,.1),rgba(24,119,242,.06));">📸</div>
+          <div>
+            <div class="settings-card-title">Store Photos</div>
+            <div class="settings-card-sub">Up to 5 photos — store interior, team, owner <span class="st-optional">optional</span></div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div class="st-photos-grid" id="storePhotosGrid">
+            <!-- Filled by JS -->
+          </div>
+          <div id="storePhotosAddBtn" class="st-add-media-btn" onclick="document.getElementById('storePhotosInput').click()">
+            <span style="font-size:24px;">📷</span>
+            <span>Add Store Photo</span>
+            <span class="st-hint" style="margin:0;" id="storePhotosCount">0 / 5</span>
+          </div>
+          <input type="file" id="storePhotosInput" accept="image/png,image/jpeg,image/webp" style="display:none;" aria-label="Add store photo">
+        </div>
+      </div>
+
+      <!-- 10. BUSINESS DOCUMENTS (full width) -->
+      <div class="settings-card st-full">
+        <div class="settings-card-header">
+          <div class="settings-card-icon" style="background:linear-gradient(135deg,rgba(255,122,0,.1),rgba(255,122,0,.06));">📄</div>
+          <div>
+            <div class="settings-card-title">Business Documents</div>
+            <div class="settings-card-sub">Certificates, licences, registration — up to 3 <span class="st-optional">optional</span></div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <div class="st-docs-grid" id="docsGrid">
+            <!-- Filled by JS -->
+          </div>
+          <div id="docsAddBtn" class="st-add-media-btn" onclick="document.getElementById('docsInput').click()">
+            <span style="font-size:24px;">📎</span>
+            <span>Add Document</span>
+            <span class="st-hint" style="margin:0;" id="docsCount">0 / 3</span>
+          </div>
+          <input type="file" id="docsInput" accept="image/png,image/jpeg,image/webp,application/pdf" style="display:none;" aria-label="Add document">
+          <p class="st-hint">Accepted: JPG, PNG, WEBP, PDF · Images will be compressed automatically.</p>
         </div>
       </div>
 
@@ -1848,7 +2316,8 @@
       </button>
     </div>
 
-  </div> <!-- /#settingsForm -->
+  </div><!-- /#settingsForm -->
+
 
 </div> 
 
@@ -2527,7 +2996,6 @@ function validateVideo(file) {
 // ================================================================
 // (toast() already exists in the outer DOMContentLoaded scope — no redeclaration)
 
-
 // ================================================================
 //  CATEGORIES TAB
 // ================================================================
@@ -2536,10 +3004,7 @@ const EMOJI_SHORTCUTS = ["👟","📱","🍔","👗","💄","🎮","📸","🏠"
 
 let catEditingId = null;
 let catIconFile  = null;
-let catBadges    = [];          // shared with settings
-let selectedCurrency = "₦";    // settings default
 
-// Render emoji quick-picker inside category modal
 function renderEmojiPicker() {
   const picker = document.getElementById("emojiPicker");
   if (!picker) return;
@@ -2552,9 +3017,8 @@ function renderEmojiPicker() {
     span.onmouseenter = () => span.style.transform = "scale(1.25)";
     span.onmouseleave = () => span.style.transform = "scale(1)";
     span.onclick = () => {
-      catIconFile = null; // clear any uploaded file
+      catIconFile = null;
       document.getElementById("catIconEmoji").textContent = em;
-      // hide img if shown
       const preview = document.getElementById("catIconPreview");
       preview.querySelectorAll("img").forEach(i => i.remove());
       document.getElementById("catIconEmoji").style.display = "";
@@ -2563,7 +3027,6 @@ function renderEmojiPicker() {
   });
 }
 
-// Open modal for new / edit
 window.openCatModal = function(id = null, name = "", icon = "") {
   catEditingId = id;
   catIconFile  = null;
@@ -2571,14 +3034,12 @@ window.openCatModal = function(id = null, name = "", icon = "") {
   document.getElementById("catModalTitle").textContent = id ? "Edit Category" : "New Category";
   document.getElementById("catModalIcon").textContent  = id ? "✏️" : "➕";
 
-  // reset icon preview
   const preview = document.getElementById("catIconPreview");
   preview.querySelectorAll("img").forEach(i => i.remove());
   const emojiEl = document.getElementById("catIconEmoji");
   emojiEl.style.display = "";
 
   if (icon && icon.startsWith("http")) {
-    // existing uploaded image
     emojiEl.style.display = "none";
     const img = document.createElement("img");
     img.src = icon;
@@ -2597,12 +3058,10 @@ window.closeCatModal = function() {
   document.getElementById("catModal").classList.remove("open");
 };
 
-// Close modal on overlay click
 document.getElementById("catModal").addEventListener("click", function(e) {
   if (e.target === this) window.closeCatModal();
 });
 
-// Icon file picker
 document.getElementById("catIconFile").addEventListener("change", async function(e) {
   const file = e.target.files[0]; if (!file) return;
   catIconFile = file;
@@ -2616,7 +3075,6 @@ document.getElementById("catIconFile").addEventListener("change", async function
   preview.appendChild(img);
 });
 
-// SAVE CATEGORY (create or update)
 window.saveCategory = async function() {
   const name = document.getElementById("catNameInput").value.trim();
   if (!name) {
@@ -2630,16 +3088,13 @@ window.saveCategory = async function() {
   saveBtn.innerHTML = `<div class="spinner"></div><span>Saving…</span>`;
 
   try {
-    // Upload icon image if user picked one
     let iconUrl = null;
     const emojiText = document.getElementById("catIconEmoji").textContent;
 
     if (catIconFile) {
-      // reuse existing uploadFile helper already defined above in scope
       iconUrl = await uploadFile(catIconFile);
     }
 
-    // Build row data — store icon as text (emoji or url)
     const iconValue = iconUrl || (emojiText !== "🏷️" ? emojiText : null);
 
     if (catEditingId) {
@@ -2658,7 +3113,7 @@ window.saveCategory = async function() {
 
     window.closeCatModal();
     await loadCategoriesTab();
-    await loadCategories(); // refresh upload form dropdown too
+    await loadCategories();
 
   } catch (err) {
     console.error(err);
@@ -2669,7 +3124,6 @@ window.saveCategory = async function() {
   }
 };
 
-// DELETE CATEGORY
 window.deleteCategory = async function(id, name) {
   if (!confirm(`Delete "${name}"? Products in this category will become uncategorized.`)) return;
   const { error } = await supabaseClient.from("categories").delete().eq("id", id);
@@ -2679,12 +3133,10 @@ window.deleteCategory = async function(id, name) {
   await loadCategories();
 };
 
-// LOAD CATEGORIES TAB
 async function loadCategoriesTab() {
   const grid = document.getElementById("catGrid");
   if (!grid) return;
 
-  // skeleton
   grid.innerHTML = `
     <div class="cat-pill" style="pointer-events:none;">
       <div class="settings-skel" style="width:52px;height:52px;border-radius:14px;"></div>
@@ -2706,7 +3158,6 @@ async function loadCategoriesTab() {
 
     grid.innerHTML = "";
 
-    // "Add" card first
     const addCard = document.createElement("div");
     addCard.className = "cat-add-card";
     addCard.onclick = () => window.openCatModal();
@@ -2720,7 +3171,6 @@ async function loadCategoriesTab() {
       pill.className = "cat-pill";
       pill.dataset.id = cat.id;
 
-      // Icon: emoji or image
       const iconHtml = cat.icon
         ? (cat.icon.startsWith("http")
             ? `<div class="cat-pill-icon"><img src="${cat.icon}" alt="${cat.name}"></div>`
@@ -2737,21 +3187,15 @@ async function loadCategoriesTab() {
       grid.appendChild(pill);
     });
 
-    // Update count badge
     const badge = document.getElementById("catCountBadge");
     if (badge) badge.textContent = `${data.length} categor${data.length === 1 ? "y" : "ies"}`;
 
-    // SortableJS for category reorder
     if (window._catSortable) window._catSortable.destroy();
     window._catSortable = Sortable.create(grid, {
       animation: 150,
       filter: ".cat-add-card",
       ghostClass: "sortable-ghost",
       onEnd: async () => {
-        // Reorder by current DOM order (skip add-card)
-        const pills = [...grid.querySelectorAll(".cat-pill[data-id]")];
-        // no sort_order column on categories — just a visual reorder, no DB update needed
-        // (if you add sort_order later, call a Supabase RPC here)
         toast("Order saved locally.", "info", 1500);
       }
     });
@@ -2768,9 +3212,181 @@ async function loadCategoriesTab() {
 //  SETTINGS TAB
 // ================================================================
 
-let settingsProfileId = null; // uuid from profile table
+// ── STATE ────────────────────────────────────────────────────────
+let settingsProfileId = null;
+let selectedCurrency  = "₦";
+let catBadges         = [];
+let storePhotos       = [];
+let storeDocs         = [];
+let _pendingLogoFile  = null;
+let _existingLogoUrl  = null;
+let _logoToDelete     = null;
+let bioEditor         = null;
 
-// Currency picker
+const R2_PUBLIC_BASE  = "https://pub-0fc5736899f3449d987d356eafdca873.r2.dev";
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function r2KeyFromUrl(url) {
+  if (!url) return null;
+  return url.replace(R2_PUBLIC_BASE + "/", "");
+}
+
+async function settingsUploadFile(file, folder) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/generate-r2-upload-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${supabaseKey}`
+    },
+    body: JSON.stringify({ fileName: file.name, fileType: file.type, folder })
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || "Failed to get upload URL");
+
+  const upload = await fetch(result.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file
+  });
+  if (!upload.ok) throw new Error("Direct upload to R2 failed");
+  return result.publicUrl;
+}
+
+async function settingsDeleteFromR2(url) {
+  if (!url) return;
+  try {
+    const fileKey = r2KeyFromUrl(url);
+    if (!fileKey) return;
+    await fetch(`${supabaseUrl}/functions/v1/delete-r2-file`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({ fileKey })
+    });
+  } catch (e) {
+    console.error("R2 delete error:", e);
+  }
+}
+
+async function compressForSettings(file) {
+  if (typeof optimizeImage === "function") {
+    try { return await optimizeImage(file); } catch(e) {}
+  }
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const maxWidth = 1200;
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        if (!blob) return reject("Compression failed");
+        resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
+      }, "image/webp", 0.70);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function sanitizeHtml(html) {
+  if (typeof DOMPurify !== "undefined") {
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ["p","br","b","i","u","s","strong","em","h1","h2","h3","ul","ol","li","a","span","blockquote"],
+      ALLOWED_ATTR: ["href","target","rel","class","style"]
+    });
+  }
+  return html;
+}
+
+function stripHtml(str) {
+  if (!str) return "";
+  const div = document.createElement("div");
+  div.innerHTML = str;
+  return div.textContent || div.innerText || "";
+}
+
+function lockTextField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("input", () => {
+    const clean = stripHtml(el.value);
+    if (el.value !== clean) el.value = clean;
+  });
+  el.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+    const pos = el.selectionStart;
+    el.value = el.value.slice(0, pos) + text + el.value.slice(el.selectionEnd);
+  });
+}
+
+function lockUrlField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain").trim();
+    el.value = text;
+  });
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+function setSelectVal(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (let i = 0; i < el.options.length; i++) {
+    if (el.options[i].value === val) { el.selectedIndex = i; break; }
+  }
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? stripHtml(el.value.trim()) : "";
+}
+
+function getUrlVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return "";
+  const val = el.value.trim();
+  if (val && !val.startsWith("http")) return "";
+  return val;
+}
+
+// ── QUILL ────────────────────────────────────────────────────────
+function initQuill() {
+  if (bioEditor) return;
+  if (typeof Quill === "undefined") { console.warn("Quill not loaded"); return; }
+  bioEditor = new Quill("#st_bio_editor", {
+    theme: "snow",
+    placeholder: "Tell customers about your store — your story, values, what makes you special...",
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ color: [] }, { background: [] }],
+        [{ align: [] }],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link"],
+        ["clean"]
+      ]
+    }
+  });
+}
+
+// ── CURRENCY ─────────────────────────────────────────────────────
 window.selectCurrency = function(btn) {
   document.querySelectorAll(".currency-chip").forEach(c => c.classList.remove("active"));
   btn.classList.add("active");
@@ -2779,7 +3395,7 @@ window.selectCurrency = function(btn) {
   if (label) label.textContent = btn.textContent;
 };
 
-// Trust badges
+// ── TRUST BADGES ─────────────────────────────────────────────────
 function renderBadges() {
   const list = document.getElementById("badgeList");
   if (!list) return;
@@ -2794,7 +3410,7 @@ function renderBadges() {
 
 window.addBadge = function() {
   const input = document.getElementById("newBadgeInput");
-  const val = input.value.trim();
+  const val = stripHtml(input.value.trim());
   if (!val) return toast("Type a badge text first.", "info");
   if (catBadges.length >= 8) return toast("Max 8 badges.", "error");
   catBadges.push(val);
@@ -2807,71 +3423,155 @@ window.removeBadge = function(i) {
   renderBadges();
 };
 
-// Allow Enter on badge input
-document.getElementById("newBadgeInput")?.addEventListener("keydown", e => {
-  if (e.key === "Enter") { e.preventDefault(); window.addBadge(); }
-});
+// ── LOGO ─────────────────────────────────────────────────────────
+function showLogoPreview(url) {
+  const img         = document.getElementById("logoPreviewImg");
+  const placeholder = document.getElementById("logoPlaceholder");
+  const actions     = document.getElementById("logoActions");
+  if (img)         { img.src = url; img.style.display = "block"; }
+  if (placeholder)   placeholder.style.display = "none";
+  if (actions)       actions.style.display = "flex";
+}
 
-// Logo handlers
-document.getElementById("logoFileInput")?.addEventListener("change", async function(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const url = URL.createObjectURL(file);
-  const previewImg = document.getElementById("logoPreviewImg");
-  const icon       = document.getElementById("logoUploadIcon");
-  if (previewImg && icon) {
-    previewImg.src = url;
-    previewImg.style.display = "block";
-    icon.style.display = "none";
-  }
-  const removeBtn = document.getElementById("removeLogoBtn");
-  if (removeBtn) removeBtn.style.display = "block";
-  // store file reference for save
-  window._pendingLogoFile = file;
-});
+function clearLogoPreview() {
+  const img         = document.getElementById("logoPreviewImg");
+  const placeholder = document.getElementById("logoPlaceholder");
+  const actions     = document.getElementById("logoActions");
+  if (img)         { img.src = ""; img.style.display = "none"; }
+  if (placeholder)   placeholder.style.display = "flex";
+  if (actions)       actions.style.display = "none";
+}
 
 window.removeLogo = function() {
-  window._pendingLogoFile = null;
-  window._existingLogoUrl = null;
-  const previewImg = document.getElementById("logoPreviewImg");
-  const icon       = document.getElementById("logoUploadIcon");
-  if (previewImg) { previewImg.src = ""; previewImg.style.display = "none"; }
-  if (icon)        icon.style.display = "";
-  const removeBtn = document.getElementById("removeLogoBtn");
-  if (removeBtn) removeBtn.style.display = "none";
-  document.getElementById("logoFileInput").value = "";
+  if (_existingLogoUrl) _logoToDelete = _existingLogoUrl;
+  _pendingLogoFile = null;
+  _existingLogoUrl = null;
+  clearLogoPreview();
 };
 
-// Logo zone tap
-document.getElementById("logoZone")?.addEventListener("click", function() {
-  document.getElementById("logoFileInput").click();
-});
+// ── STORE PHOTOS ─────────────────────────────────────────────────
+function renderStorePhotos() {
+  const grid    = document.getElementById("storePhotosGrid");
+  const addBtn  = document.getElementById("storePhotosAddBtn");
+  const countEl = document.getElementById("storePhotosCount");
+  if (!grid) return;
 
-// LOAD SETTINGS
+  grid.innerHTML = "";
+  storePhotos.forEach((photo, i) => {
+    const item = document.createElement("div");
+    item.className = "st-photo-item";
+    item.innerHTML = `
+      <img src="${photo.url}" alt="Store photo ${i+1}" loading="lazy">
+      <button class="st-photo-remove" onclick="removeStorePhoto(${i})" title="Remove">×</button>`;
+    grid.appendChild(item);
+  });
+
+  const count = storePhotos.length;
+  if (countEl) countEl.textContent = `${count} / 5`;
+  if (addBtn)  addBtn.style.display = count >= 5 ? "none" : "flex";
+}
+
+window.removeStorePhoto = function(i) {
+  const photo = storePhotos[i];
+  if (!photo.isNew && photo.url) {
+    window._storePhotosToDelete = window._storePhotosToDelete || [];
+    window._storePhotosToDelete.push(photo.url);
+  }
+  storePhotos.splice(i, 1);
+  renderStorePhotos();
+};
+
+// ── DOCUMENTS ────────────────────────────────────────────────────
+function renderDocs() {
+  const grid    = document.getElementById("docsGrid");
+  const addBtn  = document.getElementById("docsAddBtn");
+  const countEl = document.getElementById("docsCount");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  storeDocs.forEach((doc, i) => {
+    const item = document.createElement("div");
+    item.className = "st-doc-item";
+    item.title = doc.name || "Document";
+
+    if (doc.isPdf) {
+      item.innerHTML = `
+        <span class="st-doc-icon">📄</span>
+        <span class="st-doc-label">${doc.name || "PDF"}</span>
+        <button class="st-photo-remove" onclick="removeDoc(${i})" title="Remove">×</button>`;
+    } else {
+      item.innerHTML = `
+        <img src="${doc.url}" alt="Document ${i+1}" loading="lazy">
+        <span class="st-doc-label">${doc.name || "Doc"}</span>
+        <button class="st-photo-remove" onclick="removeDoc(${i})" title="Remove">×</button>`;
+    }
+    item.addEventListener("click", (e) => {
+      if (e.target.classList.contains("st-photo-remove")) return;
+      window.open(doc.url, "_blank");
+    });
+    grid.appendChild(item);
+  });
+
+  const count = storeDocs.length;
+  if (countEl) countEl.textContent = `${count} / 3`;
+  if (addBtn)  addBtn.style.display = count >= 3 ? "none" : "flex";
+}
+
+window.removeDoc = function(i) {
+  const doc = storeDocs[i];
+  if (!doc.isNew && doc.url) {
+    window._docsToDelete = window._docsToDelete || [];
+    window._docsToDelete.push(doc.url);
+  }
+  storeDocs.splice(i, 1);
+  renderDocs();
+};
+
+// ── LOAD SETTINGS ────────────────────────────────────────────────
 async function loadSettings() {
-  const skeleton = document.getElementById("settingsSkeleton");
-  const form     = document.getElementById("settingsForm");
-  if (skeleton) skeleton.style.display = "grid";
-  if (form)     form.style.display     = "none";
+  const reloadBtn = document.querySelector(".st-reload-btn");
+  const skeleton  = document.getElementById("settingsSkeleton");
+  const form      = document.getElementById("settingsForm");
+
+  if (reloadBtn) reloadBtn.classList.add("spinning");
+  if (skeleton)  skeleton.style.display = "grid";
+  if (form)      form.style.display     = "none";
+
+  window._storePhotosToDelete = [];
+  window._docsToDelete        = [];
+  _logoToDelete               = null;
 
   try {
     const { data, error } = await supabaseClient
       .from("profile").select("*").limit(1).single();
 
-    if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
+    if (error && error.code !== "PGRST116") throw error;
 
     if (data) {
       settingsProfileId = data.id;
 
-      // Populate fields
-      setVal("st_business_name", data.business_name || "");
-      setVal("st_tagline",       data.tagline        || "");
-      setVal("st_whatsapp",      data.whatsapp_number|| "");
-      setVal("st_bio",           data.bio            || "");
-      setVal("st_wa_message",    data.wa_message     || "Hi, I want to buy [Product Name]");
-      setVal("st_response_time", data.response_time  || "");
-      setVal("st_delivery_info", data.delivery_info  || "");
+      setVal("st_business_name", data.business_name    || "");
+      setVal("st_tagline",       data.tagline           || "");
+      setVal("st_whatsapp",      data.whatsapp_number   || "");
+      setVal("st_phone",         data.phone_number      || "");
+      setVal("st_address",       data.store_address     || "");
+      setVal("st_city",          data.store_city        || "");
+      setVal("st_wa_message",    data.wa_message        || "Hi, I want to buy [Product Name]");
+      setVal("st_response_time", data.response_time     || "");
+      setVal("st_delivery_info", data.delivery_info     || "");
+      setVal("st_return_policy", data.return_policy     || "");
+      setVal("st_year_est",      data.year_established  || "");
 
-      // Currency
+      setSelectVal("st_business_type", data.business_type || "");
+      setSelectVal("st_country",       data.store_country || "");
+
+      setVal("st_facebook",  data.social_facebook  || "");
+      setVal("st_instagram", data.social_instagram || "");
+      setVal("st_twitter",   data.social_twitter   || "");
+      setVal("st_tiktok",    data.social_tiktok    || "");
+      setVal("st_youtube",   data.social_youtube   || "");
+      setVal("st_website",   data.social_website   || "");
+
       const storedCurrency = data.currency_symbol || "₦";
       selectedCurrency = storedCurrency;
       document.querySelectorAll(".currency-chip").forEach(c => {
@@ -2882,81 +3582,227 @@ async function loadSettings() {
         }
       });
 
-      // Badges
       catBadges = Array.isArray(data.trust_badges) ? data.trust_badges : [];
       renderBadges();
 
-      // Logo
-      if (data.logo_url) {
-        window._existingLogoUrl = data.logo_url;
-        const previewImg = document.getElementById("logoPreviewImg");
-        const icon       = document.getElementById("logoUploadIcon");
-        const removeBtn  = document.getElementById("removeLogoBtn");
-        if (previewImg) { previewImg.src = data.logo_url; previewImg.style.display = "block"; }
-        if (icon)        icon.style.display = "none";
-        if (removeBtn)   removeBtn.style.display = "block";
+      _existingLogoUrl = data.logo_url || null;
+      _existingLogoUrl ? showLogoPreview(_existingLogoUrl) : clearLogoPreview();
+
+      initQuill();
+      if (bioEditor) {
+        bioEditor.root.innerHTML = sanitizeHtml(data.bio || "");
       }
+
+      storePhotos = (data.store_photos || []).map(url => ({
+        url, isNew: false, fileKey: r2KeyFromUrl(url)
+      }));
+      renderStorePhotos();
+
+      storeDocs = (data.documents || []).map(url => ({
+        url, isNew: false, fileKey: r2KeyFromUrl(url),
+        isPdf: url.toLowerCase().endsWith(".pdf"),
+        name: url.split("/").pop()
+      }));
+      renderDocs();
+
+    } else {
+      initQuill();
+      storePhotos = [];
+      storeDocs   = [];
+      renderStorePhotos();
+      renderDocs();
     }
 
     if (skeleton) skeleton.style.display = "none";
     if (form)     form.style.display     = "block";
 
+    // ── Wire up event listeners AFTER DOM is visible ──
+    _bindSettingsListeners();
+
   } catch (err) {
     console.error(err);
     if (skeleton) skeleton.style.display = "none";
-    if (form)     form.style.display     = "block"; // show blank form anyway
+    if (form)     form.style.display     = "block";
+    initQuill();
+    _bindSettingsListeners();
     toast("Could not load settings — showing blank form.", "info");
+  } finally {
+    if (reloadBtn) reloadBtn.classList.remove("spinning");
   }
 }
 
-function setVal(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.value = val;
+// ── BIND LISTENERS (called once after form is shown) ─────────────
+let _listenersBound = false;
+function _bindSettingsListeners() {
+  if (_listenersBound) return;
+  _listenersBound = true;
+
+  // Badge input enter key
+  document.getElementById("newBadgeInput")?.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); window.addBadge(); }
+  });
+
+  // Logo file input
+  document.getElementById("logoFileInput")?.addEventListener("change", async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    // If replacing existing logo, mark old one for deletion
+    if (_existingLogoUrl) _logoToDelete = _existingLogoUrl;
+    try {
+      const compressed = await compressForSettings(file);
+      _pendingLogoFile = compressed;
+      showLogoPreview(URL.createObjectURL(compressed));
+    } catch(err) {
+      _pendingLogoFile = file;
+      showLogoPreview(URL.createObjectURL(file));
+    }
+    this.value = "";
+  });
+
+  // Store photos input
+  document.getElementById("storePhotosInput")?.addEventListener("change", async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (storePhotos.length >= 5) return toast("Max 5 store photos.", "error");
+    try {
+      const compressed = await compressForSettings(file);
+      storePhotos.push({ url: URL.createObjectURL(compressed), isNew: true, file: compressed });
+      renderStorePhotos();
+    } catch(err) {
+      toast("Could not process image.", "error");
+    }
+    this.value = "";
+  });
+
+  // Documents input
+  document.getElementById("docsInput")?.addEventListener("change", async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (storeDocs.length >= 3) return toast("Max 3 documents.", "error");
+    const isPdf = file.type === "application/pdf";
+    let processedFile = file;
+    let previewUrl;
+    if (isPdf) {
+      previewUrl = URL.createObjectURL(file);
+    } else {
+      try {
+        processedFile = await compressForSettings(file);
+        previewUrl = URL.createObjectURL(processedFile);
+      } catch(e) {
+        previewUrl = URL.createObjectURL(file);
+      }
+    }
+    storeDocs.push({ url: previewUrl, isNew: true, file: processedFile, isPdf, name: file.name });
+    renderDocs();
+    this.value = "";
+  });
+
+  // Lock all plain text fields from HTML injection
+  [
+    "st_business_name","st_tagline","st_whatsapp","st_phone",
+    "st_year_est","st_address","st_city","st_response_time",
+    "st_wa_message","st_delivery_info","st_return_policy","newBadgeInput"
+  ].forEach(lockTextField);
+
+  // Lock URL fields
+  ["st_facebook","st_instagram","st_twitter","st_tiktok","st_youtube","st_website"]
+    .forEach(lockUrlField);
 }
 
-// SAVE SETTINGS
+// ── SAVE SETTINGS ────────────────────────────────────────────────
 window.saveSettings = async function() {
   const btn = document.getElementById("saveSettingsBtn");
   btn.disabled = true;
-  btn.innerHTML = `<div class="spinner"></div><span>Saving…</span>`;
+  btn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;margin-right:8px;"></div>Saving…`;
 
   try {
-    // Upload logo if a new file was picked
-    let logoUrl = window._existingLogoUrl || null;
-    if (window._pendingLogoFile) {
-      logoUrl = await uploadFile(window._pendingLogoFile);
-      window._existingLogoUrl = logoUrl;
-      window._pendingLogoFile = null;
+    // 1. LOGO
+    let finalLogoUrl = _existingLogoUrl;
+    if (_logoToDelete) {
+      await settingsDeleteFromR2(_logoToDelete);
+      _logoToDelete = null;
+    }
+    if (_pendingLogoFile) {
+      finalLogoUrl = await settingsUploadFile(_pendingLogoFile, "logos");
+      _existingLogoUrl = finalLogoUrl;
+      _pendingLogoFile = null;
     }
 
+    // 2. STORE PHOTOS — delete removed, upload new
+    for (const url of (window._storePhotosToDelete || [])) {
+      await settingsDeleteFromR2(url);
+    }
+    window._storePhotosToDelete = [];
+    for (let i = 0; i < storePhotos.length; i++) {
+      if (storePhotos[i].isNew && storePhotos[i].file) {
+        const uploadedUrl = await settingsUploadFile(storePhotos[i].file, "store-photos");
+        storePhotos[i] = { url: uploadedUrl, isNew: false, fileKey: r2KeyFromUrl(uploadedUrl) };
+      }
+    }
+    const finalPhotos = storePhotos.map(p => p.url);
+
+    // 3. DOCUMENTS — delete removed, upload new
+    for (const url of (window._docsToDelete || [])) {
+      await settingsDeleteFromR2(url);
+    }
+    window._docsToDelete = [];
+    for (let i = 0; i < storeDocs.length; i++) {
+      if (storeDocs[i].isNew && storeDocs[i].file) {
+        const uploadedUrl = await settingsUploadFile(storeDocs[i].file, "documents");
+        storeDocs[i] = { ...storeDocs[i], url: uploadedUrl, isNew: false, fileKey: r2KeyFromUrl(uploadedUrl) };
+      }
+    }
+    const finalDocs = storeDocs.map(d => d.url);
+
+    // 4. BIO from Quill
+    let bioHtml = "";
+    if (bioEditor) {
+      const rawHtml = bioEditor.root.innerHTML;
+      bioHtml = sanitizeHtml(rawHtml);
+      if (bioHtml === "<p><br></p>") bioHtml = "";
+    }
+
+    // 5. PAYLOAD
     const payload = {
-      business_name:   getVal("st_business_name"),
-      tagline:         getVal("st_tagline"),
-      whatsapp_number: getVal("st_whatsapp").replace(/\s+/g,""),
-      bio:             getVal("st_bio"),
-      wa_message:      getVal("st_wa_message"),
-      response_time:   getVal("st_response_time"),
-      delivery_info:   getVal("st_delivery_info"),
-      currency_symbol: selectedCurrency,
-      trust_badges:    catBadges,
-      logo_url:        logoUrl
+      p_id:               settingsProfileId,
+      p_business_name:    getVal("st_business_name"),
+      p_tagline:          getVal("st_tagline"),
+      p_whatsapp_number:  getVal("st_whatsapp"),
+      p_bio:              bioHtml,
+      p_phone_number:     getVal("st_phone"),
+      p_store_address:    getVal("st_address"),
+      p_store_city:       getVal("st_city"),
+      p_store_country:    getVal("st_country"),
+      p_wa_message:       getVal("st_wa_message"),
+      p_response_time:    getVal("st_response_time"),
+      p_delivery_info:    getVal("st_delivery_info"),
+      p_currency_symbol:  selectedCurrency,
+      p_trust_badges:     catBadges,
+      p_logo_url:         finalLogoUrl || null,
+      p_social_facebook:  getUrlVal("st_facebook"),
+      p_social_instagram: getUrlVal("st_instagram"),
+      p_social_twitter:   getUrlVal("st_twitter"),
+      p_social_tiktok:    getUrlVal("st_tiktok"),
+      p_social_youtube:   getUrlVal("st_youtube"),
+      p_social_website:   getUrlVal("st_website"),
+      p_store_photos:     finalPhotos,
+      p_documents:        finalDocs,
+      p_return_policy:    getVal("st_return_policy"),
+      p_year_established: getVal("st_year_est"),
+      p_business_type:    getVal("st_business_type"),
     };
 
-    let error;
-    if (settingsProfileId) {
-      // UPDATE existing row
-      ({ error } = await supabaseClient.from("profile").update(payload).eq("id", settingsProfileId));
-    } else {
-      // INSERT first-time row
-      const { data: inserted, error: insertErr } = await supabaseClient
-        .from("profile").insert(payload).select().single();
-      error = insertErr;
-      if (inserted) settingsProfileId = inserted.id;
-    }
-
+    // 6. SAVE TO SUPABASE
+    const { data: saved, error } = await supabaseClient.rpc("upsert_profile", payload);
     if (error) throw error;
 
-    // Show saved tag
+    if (saved && saved.length > 0 && saved[0].id) {
+      settingsProfileId = saved[0].id;
+    }
+
+    renderStorePhotos();
+    renderDocs();
+
     const savedTag = document.getElementById("settingsSavedTag");
     if (savedTag) {
       savedTag.classList.add("show");
@@ -2973,18 +3819,13 @@ window.saveSettings = async function() {
   }
 };
 
-function getVal(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : "";
-}
 
 // ================================================================
-//  TAB ACTIVATION HOOKS — load data when tabs are first opened
+//  TAB ACTIVATION HOOKS
 // ================================================================
 let _catLoaded      = false;
 let _settingsLoaded = false;
 
-// Patch the existing tab switcher to trigger lazy-loads
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", async () => {
     const tab = btn.dataset.tab;
@@ -2998,9 +3839,14 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     }
   });
 });
+  
 });
+
+
+
 </script>
 
 <script src="https://bartoos-1.github.io/store/global-error.js"></script>
 </body>
 </html>
+
